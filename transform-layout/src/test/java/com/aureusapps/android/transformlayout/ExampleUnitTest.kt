@@ -1,4 +1,4 @@
-package com.aureusapps.android.zoomlayout
+package com.aureusapps.android.transformlayout
 
 import org.junit.Test
 

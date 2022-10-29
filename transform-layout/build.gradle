@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace 'com.aureusapps.android.zoomlayout'
+    namespace 'com.aureusapps.android.transformlayout'
     compileSdk 33
 
     defaultConfig {

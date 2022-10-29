@@ -1,13 +1,13 @@
-package com.aureusapps.android.zoomlayout.example
+package com.aureusapps.android.transformlayout.example
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.aureusapps.android.zoomlayout.ZoomLayout
+import com.aureusapps.android.transformlayout.TransformLayout
 import com.google.android.material.button.MaterialButton
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var zoomLayout: ZoomLayout
+    private lateinit var transformLayout: TransformLayout
     private lateinit var zoomInButton: MaterialButton
     private lateinit var zoomOutButton: MaterialButton
 
@@ -15,15 +15,15 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        zoomLayout = findViewById(R.id.zoom_layout)
+        transformLayout = findViewById(R.id.zoom_layout)
         zoomInButton = findViewById(R.id.zoom_in_button)
         zoomOutButton = findViewById(R.id.zoom_out_button)
 
         zoomInButton.setOnClickListener {
-            zoomLayout.scaleUp()
+            transformLayout.scale()
         }
         zoomOutButton.setOnClickListener {
-            zoomLayout.scaleDown()
+            transformLayout.scale()
         }
     }
 

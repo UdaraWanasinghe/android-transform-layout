@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <com.aureusapps.android.zoomlayout.ZoomLayout
+    <com.aureusapps.android.transformlayout.TransformLayout
         android:id="@+id/zoom_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
@@ -18,7 +18,7 @@
             android:contentDescription="@string/sample_zoom_image"
             android:src="@drawable/ic_baseline_image_24" />
 
-    </com.aureusapps.android.zoomlayout.ZoomLayout>
+    </com.aureusapps.android.transformlayout.TransformLayout>
 
     <LinearLayout
         android:layout_width="wrap_content"

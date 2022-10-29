@@ -1,4 +1,4 @@
-package com.aureusapps.android.zoomlayout
+package com.aureusapps.android.transformlayout
 
 import android.content.Context
 import android.graphics.Matrix
@@ -17,9 +17,9 @@ import kotlin.math.atan2
 
 @Suppress("MemberVisibilityCanBePrivate", "unused")
 
-class ZoomGestureDetector(
+class TransformGestureDetector(
     context: Context,
-    private val gestureDetectorListener: ZoomGestureDetectorListener
+    private val gestureDetectorListener: TransformGestureDetectorListener
 ) {
 
     companion object {
@@ -36,11 +36,11 @@ class ZoomGestureDetector(
     var isTranslationEnabled = true
     var isFlingEnabled = true
 
-    val scaling: Float get() = _drawMatrix.scaling
-    val rotation: Float get() = _drawMatrix.rotation
-    val translation: Position get() = _drawMatrix.translation
-
-    val drawMatrix: Matrix get() = _drawMatrix
+    val drawMatrix: Matrix
+        get() {
+            tempDrawMatrix.set(_drawMatrix)
+            return tempDrawMatrix
+        }
     val touchMatrix: Matrix
         get() {
             if (drawMatrixChanged) {
@@ -50,15 +50,17 @@ class ZoomGestureDetector(
             return _touchMatrix
         }
 
-    private val _drawMatrix: Matrix = Matrix()
+    private val _touchMatrix = Matrix()
+    private val _drawMatrix = Matrix()
+    private val tempDrawMatrix = Matrix()
     private val pointerMap: HashMap<Int, Position> = HashMap() // touch event pointers
 
     private var translationX = 0f
     private var translationY = 0f
-    private var _scaling = 1f
+    private var scaling = 1f
     private var pivotX = 0f
     private var pivotY = 0f
-    private var _rotation = 0f
+    private var rotation = 0f
 
     private var previousFocusX = 0f
     private var previousFocusY = 0f
@@ -73,8 +75,7 @@ class ZoomGestureDetector(
     private var downFocusX: Float = 0f
     private var downFocusY: Float = 0f
 
-    private val _touchMatrix: Matrix = Matrix()
-    private val oldDrawMatrix: Matrix = Matrix()
+    private val previousDrawMatrix: Matrix = Matrix()
     private var drawMatrixChanged: Boolean = true
 
     init {
@@ -83,84 +84,155 @@ class ZoomGestureDetector(
         touchSlopSquare = touchSlop * touchSlop
     }
 
-    fun setZoom(
+    /**
+     * Update scaling, rotation and translation values.
+     *
+     * @param scaling Scaling value
+     * @param rotation Rotation value
+     * @param translation Translation value
+     * @param inform Whether to inform listeners about the update
+     */
+    fun setTransform(
         scaling: Float = _drawMatrix.scaling,
         rotation: Float = _drawMatrix.rotation,
         translation: Position = _drawMatrix.translation,
-        informUpdated: Boolean = true
+        inform: Boolean = true
     ) {
         cancelAnims()
-        _scaling = scaling
-        _rotation = rotation
-        val (translationX, translationY) = translation
-        this.translationX = translationX
-        this.translationY = translationY
+        this.scaling = scaling
+        this.rotation = rotation
+        val (tx, ty) = translation
+        translationX = tx
+        translationY = ty
         pivotX = 0f
         pivotY = 0f
-        updateDrawMatrix()
-        if (informUpdated) {
-            informUpdated()
-        }
+        updateDrawMatrix(inform)
     }
 
-    fun setZoom(matrix: Matrix, informUpdated: Boolean = true) {
+    /**
+     * Update scaling, rotation and translation values.
+     *
+     * @param matrix Matrix to update values from
+     * @param inform Whether to inform listeners about the update
+     */
+    fun setTransform(matrix: Matrix, inform: Boolean = true) {
         cancelAnims()
-        _scaling = matrix.scaling
-        _rotation = matrix.rotation
-        val (translationX, translationY) = matrix.translation
-        this.translationX = translationX
-        this.translationY = translationY
+        scaling = matrix.scaling
+        rotation = matrix.rotation
+        val (tx, ty) = matrix.translation
+        translationX = tx
+        translationY = ty
         pivotX = 0f
         pivotY = 0f
-        updateDrawMatrix(matrix)
-        if (informUpdated) {
-            informUpdated()
-        }
+        updateDrawMatrix(matrix, inform)
     }
 
-    fun concatZoom(matrix: Matrix, informUpdated: Boolean = true) {
+    /**
+     * Concatenate given matrix to the current draw matrix.
+     *
+     * @param matrix Matrix to concatenate
+     * @param inform Whether to inform listeners about the update
+     */
+    fun concatTransform(matrix: Matrix, inform: Boolean = true) {
         cancelAnims()
         _drawMatrix.postConcat(matrix)
-        setZoom(_drawMatrix, informUpdated)
+        setTransform(_drawMatrix, inform)
     }
 
-    fun resetZoom(informUpdated: Boolean = true) {
+    /**
+     * Reset transformation matrix to identity matrix.
+     *
+     * @param inform Whether to inform listeners about the update
+     */
+    fun resetTransform(inform: Boolean = true) {
         cancelAnims()
         translationX = 0f
         translationY = 0f
-        _scaling = 1f
+        scaling = 1f
         pivotX = 0f
         pivotY = 0f
-        _rotation = 0f
+        rotation = 0f
         _drawMatrix.reset()
-        if (informUpdated) {
+        drawMatrixChanged = true
+        if (inform) {
             informUpdated()
         }
     }
 
-    fun scaleUp(stepSize: Float = 0.2f) {
-        _scaling += stepSize
+    /**
+     * Scale around the given pivot point or the last pivot point.
+     *
+     * @param size Scaling step size. Use positive value to scale up and negative value to scale down.
+     * @param px Pivot x
+     * @param py Pivot y
+     * @param inform Whether to inform listeners about the update
+     */
+    fun setScaling(
+        size: Float = 0.2f,
+        px: Float = pivotX,
+        py: Float = pivotY,
+        inform: Boolean = true
+    ) {
+        scaling += size
+        pivotX = px
+        pivotY = py
+        updateDrawMatrix(inform)
+    }
+
+    /**
+     * Rotate around the given pivot point or the last pivot point.
+     *
+     * @param angle Rotation angle in degrees
+     * @param px Pivot x
+     * @param py Pivot y
+     */
+    fun setRotation(
+        angle: Float = 45f,
+        px: Float = pivotX,
+        py: Float = pivotY,
+        inform: Boolean = true
+    ) {
+        rotation += angle.toRadians
+        pivotX = px
+        pivotY = py
+        updateDrawMatrix(inform)
+    }
+
+    /**
+     * Translate by dx and dy amounts.
+     *
+     * @param dx translate change in x direction
+     * @param dy translate change in y direction
+     */
+    fun setTranslation(dx: Float = translationX, dy: Float = translationY) {
+        if (dx == translationX && dy == translationY) return
+        translationX = dx
+        translationY = dy
         updateDrawMatrix()
         informUpdated()
     }
 
-    fun scaleDown(stepSize: Float = 0.2f) {
-        _scaling -= stepSize
-        updateDrawMatrix()
-        informUpdated()
-    }
-
+    /**
+     * Call this on touch event to handle gesture detection.
+     */
     fun onTouchEvent(event: MotionEvent): Boolean {
         // update velocity tracker
         if (isFlingEnabled) {
             if (velocityTracker == null) {
+                // To track velocity, it requires to keep track on time and touch events.
+                // Computing release velocity is an expensive task as it involves integration.
+                // This is the reason why VelocityTracker is implemented in native code.
+                // Here we are creating [VelocityTracker] object in the native space.
                 velocityTracker = VelocityTracker.obtain()
             }
+            // Every touch event must be tracked.
             velocityTracker?.addMovement(event)
         }
         // handle touch events
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
+                // ACTION_DOWN is called when the first pointer touches the screen.
+                // At this time, touch down point is taken as the focus point.
                 downFocusX = event.x
                 downFocusY = event.y
                 // update focus point
@@ -169,11 +241,14 @@ class ZoomGestureDetector(
                 event.savePointers()
                 // cancel ongoing fling animations
                 cancelAnims()
-                // tap
+                // this is required to detect tap event
                 alwaysInTapRegion = true
                 gestureDetectorListener.onZoomStart(downFocusX to downFocusY, _drawMatrix)
             }
             MotionEvent.ACTION_POINTER_DOWN -> {
+                // In a multitouch screen, subsequent touch down events are called as ACTION_POINTER_DOWN.
+                // At this time, the focus point is calculated by averaging the touch points.
+                //
                 updateTouchParameters(event)
             }
             MotionEvent.ACTION_POINTER_UP -> {
@@ -220,12 +295,12 @@ class ZoomGestureDetector(
                     if (event.pointerCount > 1) {
                         if (isScaleEnabled) {
                             val touchSpan = event.touchSpan(focusX, focusY)
-                            _scaling *= scaling(touchSpan)
-                            _scaling = MathUtils.clamp(_scaling, MIN_SCALE, MAX_SCALE)
+                            scaling *= scaling(touchSpan)
+                            scaling = MathUtils.clamp(scaling, MIN_SCALE, MAX_SCALE)
                             previousTouchSpan = touchSpan
                         }
                         if (isRotationEnabled) {
-                            _rotation += event.rotation(focusX, focusY)
+                            rotation += event.rotation(focusX, focusY)
                         }
                         if (isTranslationEnabled) {
                             val (translationX, translationY) = translation(focusX, focusY)
@@ -327,23 +402,29 @@ class ZoomGestureDetector(
     }
 
     private fun informUpdated() {
-        gestureDetectorListener.onZoomUpdate(oldDrawMatrix, _drawMatrix)
+        gestureDetectorListener.onZoomUpdate(previousDrawMatrix, _drawMatrix)
     }
 
     // draw matrix is used to transform child view when drawing on the canvas
-    private fun updateDrawMatrix() {
-        oldDrawMatrix.set(_drawMatrix)
+    private fun updateDrawMatrix(inform: Boolean = true) {
+        previousDrawMatrix.set(_drawMatrix)
         _drawMatrix.reset()
-        _drawMatrix.preScale(_scaling, _scaling, pivotX, pivotY)
-        _drawMatrix.preRotate(_rotation, pivotX, pivotY)
+        _drawMatrix.preScale(scaling, scaling, pivotX, pivotY)
+        _drawMatrix.preRotate(rotation, pivotX, pivotY)
         _drawMatrix.postTranslate(translationX, translationY)
         drawMatrixChanged = true
+        if (inform) {
+            informUpdated()
+        }
     }
 
-    private fun updateDrawMatrix(matrix: Matrix) {
-        oldDrawMatrix.set(_drawMatrix)
+    private fun updateDrawMatrix(matrix: Matrix, inform: Boolean = true) {
+        previousDrawMatrix.set(_drawMatrix)
         _drawMatrix.set(matrix)
         drawMatrixChanged = true
+        if (inform) {
+            informUpdated()
+        }
     }
 
     // this updates the pivot point and translation error caused by changing the pivot point
@@ -441,8 +522,11 @@ class ZoomGestureDetector(
 
     private fun MotionEvent.savePointers() {
         pointerMap.clear()
+        // get the pointer id if this event is a pointer up event
         val upIndex = if (actionMasked == MotionEvent.ACTION_POINTER_UP) actionIndex else -1
+        // save all active pointers to find the pivot point
         for (pointerIndex in 0 until pointerCount) {
+            // skip the pointer that is up
             if (pointerIndex == upIndex) continue
             val id = getPointerId(pointerIndex)
             val x = getX(pointerIndex)
@@ -456,6 +540,15 @@ class ZoomGestureDetector(
         flingAnimY?.cancel()
         flingAnimX = null
         flingAnimY = null
+    }
+
+    private val Float.toRadians: Float
+        get() = this * Math.PI.toFloat() / 180f
+
+
+    protected fun finalize() {
+        // since velocity tracker is a natively allocated object, it should be explicitly released.
+        velocityTracker?.recycle()
     }
 
 }

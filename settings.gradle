@@ -18,6 +18,6 @@ dependencyResolutionManagement {
         mavenLocal()
     }
 }
-rootProject.name = "zoom-layout"
+rootProject.name = "transform-layout"
 include ':example'
-include ':zoom-layout'
+include ':transform-layout'

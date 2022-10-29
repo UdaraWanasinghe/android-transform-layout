@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace 'com.aureusapps.android.zoomlayout.example'
+    namespace 'com.aureusapps.android.transformlayout.example'
     compileSdk 33
 
     defaultConfig {
-        applicationId "com.aureusapps.android.zoomlayout.example"
+        applicationId "com.aureusapps.android.transformlayout.example"
         minSdk 21
         targetSdk 33
         versionCode 1
@@ -38,7 +38,7 @@ dependencies {
     implementation libs.appcompat
     implementation libs.material
     implementation libs.constraintlayout
-    implementation project(":zoom-layout")
+    implementation project(':transform-layout')
 
     testImplementation libs.junit
 

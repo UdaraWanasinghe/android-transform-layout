@@ -1,4 +1,4 @@
-package com.aureusapps.android.zoomlayout
+package com.aureusapps.android.transformlayout
 
 import android.content.Context
 import android.graphics.Canvas
@@ -8,15 +8,15 @@ import android.view.MotionEvent
 import android.view.View
 import android.widget.FrameLayout
 
-class ZoomLayout @JvmOverloads constructor(
+class TransformLayout @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0,
     defStyleRes: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr, defStyleRes) {
 
-    private val gesturedDetectorListeners = mutableSetOf<ZoomGestureDetectorListener>()
-    private val gestureDetectorListener = object : ZoomGestureDetectorListener {
+    private val gesturedDetectorListeners = mutableSetOf<TransformGestureDetectorListener>()
+    private val gestureDetectorListener = object : TransformGestureDetectorListener {
         override fun onZoomStart(downPoint: Position, drawMatrix: Matrix) {
             invalidate()
             gesturedDetectorListeners.forEach { it.onZoomStart(downPoint, drawMatrix) }
@@ -37,59 +37,55 @@ class ZoomLayout @JvmOverloads constructor(
             gesturedDetectorListeners.forEach { it.onSingleTap(tapPoint) }
         }
     }
-    private val zoomGestureDetector = ZoomGestureDetector(context, gestureDetectorListener)
+    private val transformGestureDetector = TransformGestureDetector(context, gestureDetectorListener)
 
     var isZoomEnabled
-        get() = zoomGestureDetector.isZoomEnabled
+        get() = transformGestureDetector.isZoomEnabled
         set(value) {
-            zoomGestureDetector.isZoomEnabled = value
+            transformGestureDetector.isZoomEnabled = value
         }
 
     var isScaleEnabled
-        get() = zoomGestureDetector.isScaleEnabled
+        get() = transformGestureDetector.isScaleEnabled
         set(value) {
-            zoomGestureDetector.isScaleEnabled = value
+            transformGestureDetector.isScaleEnabled = value
         }
 
     var isRotationEnabled
-        get() = zoomGestureDetector.isRotationEnabled
+        get() = transformGestureDetector.isRotationEnabled
         set(value) {
-            zoomGestureDetector.isRotationEnabled = value
+            transformGestureDetector.isRotationEnabled = value
         }
 
     var isTranslationEnabled
-        get() = zoomGestureDetector.isTranslationEnabled
+        get() = transformGestureDetector.isTranslationEnabled
         set(value) {
-            zoomGestureDetector.isTranslationEnabled = value
+            transformGestureDetector.isTranslationEnabled = value
         }
 
     var isFlingEnabled
-        get() = zoomGestureDetector.isFlingEnabled
+        get() = transformGestureDetector.isFlingEnabled
         set(value) {
-            zoomGestureDetector.isFlingEnabled = value
+            transformGestureDetector.isFlingEnabled = value
         }
 
     override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
         if (isZoomEnabled) return true
-        zoomGestureDetector.onTouchEvent(event)
+        transformGestureDetector.onTouchEvent(event)
         return super.onInterceptTouchEvent(event)
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        return zoomGestureDetector.onTouchEvent(event)
+        return transformGestureDetector.onTouchEvent(event)
     }
 
     override fun drawChild(canvas: Canvas, child: View, drawingTime: Long): Boolean {
-        canvas.setMatrix(zoomGestureDetector.drawMatrix)
+        canvas.setMatrix(transformGestureDetector.drawMatrix)
         return super.drawChild(canvas, child, drawingTime)
     }
 
-    fun scaleUp(stepSize: Float = 0.2f) {
-        zoomGestureDetector.scaleUp(stepSize)
-    }
-
-    fun scaleDown(stepSize: Float = 0.2f) {
-        zoomGestureDetector.scaleDown(stepSize)
+    fun scale(stepSize: Float = 0.2f) {
+        transformGestureDetector.setScaling(stepSize)
     }
 
 }

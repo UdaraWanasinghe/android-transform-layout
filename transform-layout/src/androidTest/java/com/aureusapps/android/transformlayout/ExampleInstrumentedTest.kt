@@ -1,4 +1,4 @@
-package com.aureusapps.android.zoomlayout
+package com.aureusapps.android.transformlayout
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
