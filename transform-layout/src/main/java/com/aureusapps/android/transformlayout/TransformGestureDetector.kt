@@ -5,13 +5,12 @@ import android.graphics.Matrix
 import android.view.MotionEvent
 import android.view.VelocityTracker
 import android.view.ViewConfiguration
-import androidx.core.math.MathUtils
+import androidx.core.math.MathUtils.clamp
 import androidx.dynamicanimation.animation.FlingAnimation
 import androidx.dynamicanimation.animation.FloatValueHolder
 import com.aureusapps.android.extensions.rotation
 import com.aureusapps.android.extensions.scaling
 import com.aureusapps.android.extensions.translation
-import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.atan2
 
@@ -233,14 +232,18 @@ class TransformGestureDetector(
             MotionEvent.ACTION_DOWN -> {
                 // ACTION_DOWN is called when the first pointer touches the screen.
                 // At this time, touch down point is taken as the focus point.
+                // Focus point is the point around which scaling and rotation is performed relative to parent view.
+                // In this case, focus point is the touch down point.
+                // Pivot point is the actual point on the child view where scaling and rotation is performed.
+                // We keep track on the previous focus point to calculate the translation.
                 downFocusX = event.x
                 downFocusY = event.y
-                // update focus point
                 previousFocusX = downFocusX
                 previousFocusY = downFocusY
                 event.savePointers()
                 // cancel ongoing fling animations
                 cancelAnims()
+                updatePivotPoint(downFocusX, downFocusY)
                 // this is required to detect tap event
                 alwaysInTapRegion = true
                 gestureDetectorListener.onZoomStart(downFocusX to downFocusY, _drawMatrix)
@@ -248,7 +251,7 @@ class TransformGestureDetector(
             MotionEvent.ACTION_POINTER_DOWN -> {
                 // In a multitouch screen, subsequent touch down events are called as ACTION_POINTER_DOWN.
                 // At this time, the focus point is calculated by averaging the touch points.
-                //
+                // Since a new pointer is added to the list of pointers, we need to update the pivot point.
                 updateTouchParameters(event)
             }
             MotionEvent.ACTION_POINTER_UP -> {
@@ -296,7 +299,7 @@ class TransformGestureDetector(
                         if (isScaleEnabled) {
                             val touchSpan = event.touchSpan(focusX, focusY)
                             scaling *= scaling(touchSpan)
-                            scaling = MathUtils.clamp(scaling, MIN_SCALE, MAX_SCALE)
+                            scaling = clamp(scaling, MIN_SCALE, MAX_SCALE)
                             previousTouchSpan = touchSpan
                         }
                         if (isRotationEnabled) {
@@ -427,8 +430,10 @@ class TransformGestureDetector(
         }
     }
 
-    // this updates the pivot point and translation error caused by changing the pivot point
     private fun updatePivotPoint(focusX: Float, focusY: Float) {
+        // Location of the pivot point doesn't get changed by rotation or scaling.
+        // Translation is calculated from the new pivot point.
+        // So we have to compensate the translation change due to the new pivot point.
         val pivotPoint = floatArrayOf(focusX, focusY)
         _drawMatrix.invert(_touchMatrix)
         _touchMatrix.mapPoints(pivotPoint)
@@ -459,6 +464,9 @@ class TransformGestureDetector(
         currentFocusX: Float,
         currentFocusY: Float
     ): Float {
+        // touch span is the average distance between all active pointers and the current focus point
+        // distance can be calculated using the Pythagoras theorem: z = sqrt(x^2 + y^2)
+        // but to reduce computation cost, we use z = x + y instead
         var spanSumX = 0f
         var spanSumY = 0f
         var sumCount = 0
@@ -474,13 +482,18 @@ class TransformGestureDetector(
             val spanY = spanSumY / sumCount
             return spanX + spanY
         }
+        // if there is only one pointer, return the previous touch span
         return previousTouchSpan
     }
 
     private fun scaling(currentTouchSpan: Float): Float {
+        // scaling is calculated relative to the previous touch span
         return currentTouchSpan / previousTouchSpan
     }
 
+    /**
+     * Returns rotation around the focus point in degrees compared to previous pointer positions.
+     */
     private fun MotionEvent.rotation(
         currentFocusX: Float,
         currentFocusY: Float
@@ -508,7 +521,7 @@ class TransformGestureDetector(
         }
         if (weightSum > 0f) {
             val rotation = rotationSum / weightSum
-            return rotation * 180f / PI.toFloat()
+            return rotation.toDegrees
         }
         return 0f
     }
@@ -517,6 +530,7 @@ class TransformGestureDetector(
         currentFocusX: Float,
         currentFocusY: Float
     ): Pair<Float, Float> {
+        // translation is the difference between current focus point and previous focus point
         return (currentFocusX - previousFocusX) to (currentFocusY - previousFocusY)
     }
 
@@ -545,6 +559,8 @@ class TransformGestureDetector(
     private val Float.toRadians: Float
         get() = this * Math.PI.toFloat() / 180f
 
+    private val Float.toDegrees: Float
+        get() = this * 180f / Math.PI.toFloat()
 
     protected fun finalize() {
         // since velocity tracker is a natively allocated object, it should be explicitly released.
