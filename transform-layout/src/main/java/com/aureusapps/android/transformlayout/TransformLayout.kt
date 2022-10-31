@@ -2,7 +2,9 @@ package com.aureusapps.android.transformlayout
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Matrix
+import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
@@ -79,9 +81,13 @@ class TransformLayout @JvmOverloads constructor(
         return transformGestureDetector.onTouchEvent(event)
     }
 
+    private val paint = Paint().apply { color = Color.RED }
+
     override fun drawChild(canvas: Canvas, child: View, drawingTime: Long): Boolean {
         canvas.setMatrix(transformGestureDetector.drawMatrix)
-        return super.drawChild(canvas, child, drawingTime)
+        val d = super.drawChild(canvas, child, drawingTime)
+        canvas.drawCircle(transformGestureDetector.pivotX, transformGestureDetector.pivotY, 10f, paint)
+        return d
     }
 
     fun scale(stepSize: Float = 0.2f) {

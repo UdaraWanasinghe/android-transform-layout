@@ -57,8 +57,8 @@ class TransformGestureDetector(
     private var translationX = 0f
     private var translationY = 0f
     private var scaling = 1f
-    private var pivotX = 0f
-    private var pivotY = 0f
+    var pivotX = 0f
+    var pivotY = 0f
     private var rotation = 0f
 
     private var previousFocusX = 0f
@@ -232,9 +232,8 @@ class TransformGestureDetector(
             MotionEvent.ACTION_DOWN -> {
                 // ACTION_DOWN is called when the first pointer touches the screen.
                 // At this time, touch down point is taken as the focus point.
-                // Focus point is the point around which scaling and rotation is performed relative to parent view.
+                // Focus point is the point around which scaling and rotation is performed.
                 // In this case, focus point is the touch down point.
-                // Pivot point is the actual point on the child view where scaling and rotation is performed.
                 // We keep track on the previous focus point to calculate the translation.
                 downFocusX = event.x
                 downFocusY = event.y
