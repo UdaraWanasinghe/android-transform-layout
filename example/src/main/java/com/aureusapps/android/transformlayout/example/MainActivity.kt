@@ -20,10 +20,8 @@ class MainActivity : AppCompatActivity() {
         zoomOutButton = findViewById(R.id.zoom_out_button)
 
         zoomInButton.setOnClickListener {
-            transformLayout.scale()
         }
         zoomOutButton.setOnClickListener {
-            transformLayout.scale()
         }
     }
 

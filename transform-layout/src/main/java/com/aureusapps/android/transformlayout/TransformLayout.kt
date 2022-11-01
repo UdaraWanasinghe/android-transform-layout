@@ -2,9 +2,7 @@ package com.aureusapps.android.transformlayout
 
 import android.content.Context
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Matrix
-import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
@@ -17,36 +15,6 @@ class TransformLayout @JvmOverloads constructor(
     defStyleRes: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr, defStyleRes) {
 
-    private val gesturedDetectorListeners = mutableSetOf<TransformGestureDetectorListener>()
-    private val gestureDetectorListener = object : TransformGestureDetectorListener {
-        override fun onZoomStart(downPoint: Position, drawMatrix: Matrix) {
-            invalidate()
-            gesturedDetectorListeners.forEach { it.onZoomStart(downPoint, drawMatrix) }
-        }
-
-        override fun onZoomUpdate(oldDrawMatrix: Matrix, newDrawMatrix: Matrix) {
-            invalidate()
-            gesturedDetectorListeners.forEach { it.onZoomUpdate(oldDrawMatrix, newDrawMatrix) }
-        }
-
-        override fun onZoomComplete(upPoint: Position, drawMatrix: Matrix) {
-            invalidate()
-            gesturedDetectorListeners.forEach { it.onZoomComplete(upPoint, drawMatrix) }
-        }
-
-        override fun onSingleTap(tapPoint: Position) {
-            invalidate()
-            gesturedDetectorListeners.forEach { it.onSingleTap(tapPoint) }
-        }
-    }
-    private val transformGestureDetector = TransformGestureDetector(context, gestureDetectorListener)
-
-    var isZoomEnabled
-        get() = transformGestureDetector.isZoomEnabled
-        set(value) {
-            transformGestureDetector.isZoomEnabled = value
-        }
-
     var isScaleEnabled
         get() = transformGestureDetector.isScaleEnabled
         set(value) {
@@ -54,15 +22,15 @@ class TransformLayout @JvmOverloads constructor(
         }
 
     var isRotationEnabled
-        get() = transformGestureDetector.isRotationEnabled
+        get() = transformGestureDetector.isRotateEnabled
         set(value) {
-            transformGestureDetector.isRotationEnabled = value
+            transformGestureDetector.isRotateEnabled = value
         }
 
     var isTranslationEnabled
-        get() = transformGestureDetector.isTranslationEnabled
+        get() = transformGestureDetector.isTranslateEnabled
         set(value) {
-            transformGestureDetector.isTranslationEnabled = value
+            transformGestureDetector.isTranslateEnabled = value
         }
 
     var isFlingEnabled
@@ -71,8 +39,35 @@ class TransformLayout @JvmOverloads constructor(
             transformGestureDetector.isFlingEnabled = value
         }
 
+    var isTransformEnabled: Boolean = true
+
+    private val gesturedDetectorListeners = mutableSetOf<TransformGestureDetectorListener>()
+    private val gestureDetectorListener = object : TransformGestureDetectorListener {
+        override fun onTransformStart(px: Float, py: Float, matrix: Matrix) {
+            invalidate()
+            gesturedDetectorListeners.forEach { it.onTransformStart(px, py, matrix) }
+        }
+
+        override fun onTransformUpdate(px: Float, py: Float, oldMatrix: Matrix, newMatrix: Matrix) {
+            invalidate()
+            gesturedDetectorListeners.forEach { it.onTransformUpdate(px, py, oldMatrix, newMatrix) }
+        }
+
+        override fun onTransformComplete(px: Float, py: Float, matrix: Matrix) {
+            invalidate()
+            gesturedDetectorListeners.forEach { it.onTransformComplete(px, py, matrix) }
+        }
+
+        override fun onSingleTap(px: Float, py: Float) {
+            invalidate()
+            gesturedDetectorListeners.forEach { it.onSingleTap(px, py) }
+        }
+    }
+    private val transformGestureDetector = TransformGestureDetector(context, gestureDetectorListener)
+
+
     override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
-        if (isZoomEnabled) return true
+        if (isTransformEnabled) return true
         transformGestureDetector.onTouchEvent(event)
         return super.onInterceptTouchEvent(event)
     }
@@ -81,17 +76,10 @@ class TransformLayout @JvmOverloads constructor(
         return transformGestureDetector.onTouchEvent(event)
     }
 
-    private val paint = Paint().apply { color = Color.RED }
-
     override fun drawChild(canvas: Canvas, child: View, drawingTime: Long): Boolean {
         canvas.setMatrix(transformGestureDetector.drawMatrix)
-        val d = super.drawChild(canvas, child, drawingTime)
-        canvas.drawCircle(transformGestureDetector.pivotX, transformGestureDetector.pivotY, 10f, paint)
-        return d
+        return super.drawChild(canvas, child, drawingTime)
     }
 
-    fun scale(stepSize: Float = 0.2f) {
-        transformGestureDetector.setScaling(stepSize)
-    }
 
 }

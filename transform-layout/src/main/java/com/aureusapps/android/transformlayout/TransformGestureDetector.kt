@@ -5,12 +5,8 @@ import android.graphics.Matrix
 import android.view.MotionEvent
 import android.view.VelocityTracker
 import android.view.ViewConfiguration
-import androidx.core.math.MathUtils.clamp
 import androidx.dynamicanimation.animation.FlingAnimation
 import androidx.dynamicanimation.animation.FloatValueHolder
-import com.aureusapps.android.extensions.rotation
-import com.aureusapps.android.extensions.scaling
-import com.aureusapps.android.extensions.translation
 import kotlin.math.abs
 import kotlin.math.atan2
 
@@ -26,56 +22,39 @@ class TransformGestureDetector(
         private const val MAX_SCALE = 100f
         private const val MIN_FLING_VELOCITY = 50f
         private const val MAX_FLING_VELOCITY = 8000f
-        private const val SINGLE_TAP_TIMEOUT = 400
     }
 
-    var isZoomEnabled = false
     var isScaleEnabled = true
-    var isRotationEnabled = true
-    var isTranslationEnabled = true
+    var isRotateEnabled = true
+    var isTranslateEnabled = true
     var isFlingEnabled = true
 
     val drawMatrix: Matrix
         get() {
-            tempDrawMatrix.set(_drawMatrix)
+            tempDrawMatrix.set(_drawMatrix.matrix)
             return tempDrawMatrix
-        }
-    val touchMatrix: Matrix
-        get() {
-            if (drawMatrixChanged) {
-                _drawMatrix.invert(_touchMatrix)
-                drawMatrixChanged = false
-            }
-            return _touchMatrix
         }
 
     private val _touchMatrix = Matrix()
-    private val _drawMatrix = Matrix()
+    private val _drawMatrix = DrawMatrix()
     private val tempDrawMatrix = Matrix()
     private val pointerMap: HashMap<Int, Position> = HashMap() // touch event pointers
 
-    private var translationX = 0f
-    private var translationY = 0f
-    private var scaling = 1f
-    var pivotX = 0f
-    var pivotY = 0f
-    private var rotation = 0f
-
-    private var previousFocusX = 0f
-    private var previousFocusY = 0f
+    var previousFocusX = 0f
+    var previousFocusY = 0f
+    val pivotPoint get() = Position(previousFocusX, previousFocusY)
     private var previousTouchSpan = 1f
 
-    private var velocityTracker: VelocityTracker? = null
+    private val velocityTracker = VelocityTracker.obtain()
     private var flingAnimX: FlingAnimation? = null
     private var flingAnimY: FlingAnimation? = null
 
-    private var alwaysInTapRegion: Boolean = true
+    private var detectSingleTap: Boolean = true
     private val touchSlopSquare: Int
     private var downFocusX: Float = 0f
     private var downFocusY: Float = 0f
 
-    private val previousDrawMatrix: Matrix = Matrix()
-    private var drawMatrixChanged: Boolean = true
+    private val _lastDrawMatrix = DrawMatrix()
 
     init {
         val configuration = ViewConfiguration.get(context)
@@ -86,364 +65,255 @@ class TransformGestureDetector(
     /**
      * Update scaling, rotation and translation values.
      *
-     * @param scaling Scaling value
-     * @param rotation Rotation value
-     * @param translation Translation value
-     * @param inform Whether to inform listeners about the update
+     * @param scaling Scaling value around the given pivot point or the previous pivot point.
+     * @param rotation Rotation value around the given pivot point or the previous pivot point.
+     * @param translation Translation value to set.
+     * @param pivot Point to scale and rotate around.
+     * @param inform Whether to inform listeners about the update.
      */
     fun setTransform(
-        scaling: Float = _drawMatrix.scaling,
-        rotation: Float = _drawMatrix.rotation,
-        translation: Position = _drawMatrix.translation,
+        scaling: Float? = null,
+        rotation: Float? = null,
+        translation: Position? = null,
+        pivot: Position? = null,
         inform: Boolean = true
     ) {
         cancelAnims()
-        this.scaling = scaling
-        this.rotation = rotation
-        val (tx, ty) = translation
-        translationX = tx
-        translationY = ty
-        pivotX = 0f
-        pivotY = 0f
-        updateDrawMatrix(inform)
-    }
-
-    /**
-     * Update scaling, rotation and translation values.
-     *
-     * @param matrix Matrix to update values from
-     * @param inform Whether to inform listeners about the update
-     */
-    fun setTransform(matrix: Matrix, inform: Boolean = true) {
-        cancelAnims()
-        scaling = matrix.scaling
-        rotation = matrix.rotation
-        val (tx, ty) = matrix.translation
-        translationX = tx
-        translationY = ty
-        pivotX = 0f
-        pivotY = 0f
-        updateDrawMatrix(matrix, inform)
-    }
-
-    /**
-     * Concatenate given matrix to the current draw matrix.
-     *
-     * @param matrix Matrix to concatenate
-     * @param inform Whether to inform listeners about the update
-     */
-    fun concatTransform(matrix: Matrix, inform: Boolean = true) {
-        cancelAnims()
-        _drawMatrix.postConcat(matrix)
-        setTransform(_drawMatrix, inform)
-    }
-
-    /**
-     * Reset transformation matrix to identity matrix.
-     *
-     * @param inform Whether to inform listeners about the update
-     */
-    fun resetTransform(inform: Boolean = true) {
-        cancelAnims()
-        translationX = 0f
-        translationY = 0f
-        scaling = 1f
-        pivotX = 0f
-        pivotY = 0f
-        rotation = 0f
-        _drawMatrix.reset()
-        drawMatrixChanged = true
+        _lastDrawMatrix.set(_drawMatrix)
+        if (pivot != null) {
+            previousFocusX = pivot.first
+            previousFocusY = pivot.second
+        }
+        if (scaling != null) {
+            _drawMatrix.setScale(scaling, previousFocusX, previousFocusY)
+        }
+        if (rotation != null) {
+            _drawMatrix.setRotate(rotation, previousFocusX, previousFocusY)
+        }
+        if (translation != null) {
+            _drawMatrix.setTranslate(translation.first, translation.second)
+        }
         if (inform) {
-            informUpdated()
+            informTransformUpdated()
         }
     }
 
     /**
-     * Scale around the given pivot point or the last pivot point.
+     * Copy the given transform matrix to the draw matrix.
      *
-     * @param size Scaling step size. Use positive value to scale up and negative value to scale down.
-     * @param px Pivot x
-     * @param py Pivot y
-     * @param inform Whether to inform listeners about the update
+     * @param matrix Transform matrix to copy.
+     * @param inform Whether to inform listeners about the update.
      */
-    fun setScaling(
-        size: Float = 0.2f,
-        px: Float = pivotX,
-        py: Float = pivotY,
-        inform: Boolean = true
-    ) {
-        scaling += size
-        pivotX = px
-        pivotY = py
-        updateDrawMatrix(inform)
+    fun setTransform(matrix: Matrix, inform: Boolean = true) {
+        cancelAnims()
+        _lastDrawMatrix.set(_drawMatrix)
+        _drawMatrix.set(matrix)
+        if (inform) {
+            informTransformUpdated()
+        }
     }
 
     /**
-     * Rotate around the given pivot point or the last pivot point.
+     * Concatenate the given transform matrix to the current draw matrix.
      *
-     * @param angle Rotation angle in degrees
-     * @param px Pivot x
-     * @param py Pivot y
+     * @param matrix Transform matrix to concatenate.
+     * @param inform Whether to inform listeners about the update.
      */
-    fun setRotation(
-        angle: Float = 45f,
-        px: Float = pivotX,
-        py: Float = pivotY,
-        inform: Boolean = true
-    ) {
-        rotation += angle.toRadians
-        pivotX = px
-        pivotY = py
-        updateDrawMatrix(inform)
+    fun concatTransform(matrix: Matrix, inform: Boolean = true) {
+        cancelAnims()
+        _lastDrawMatrix.set(matrix)
+        _drawMatrix.postConcat(matrix)
+        if (inform) {
+            informTransformUpdated()
+        }
     }
 
     /**
-     * Translate by dx and dy amounts.
+     * Reset transformation matrix to an identity matrix.
      *
-     * @param dx translate change in x direction
-     * @param dy translate change in y direction
+     * @param inform Whether to inform listeners about the update.
      */
-    fun setTranslation(dx: Float = translationX, dy: Float = translationY) {
-        if (dx == translationX && dy == translationY) return
-        translationX = dx
-        translationY = dy
-        updateDrawMatrix()
-        informUpdated()
+    fun resetTransform(inform: Boolean = true) {
+        cancelAnims()
+        _lastDrawMatrix.set(_drawMatrix)
+        _drawMatrix.reset()
+        if (inform) {
+            informTransformUpdated()
+        }
     }
 
     /**
      * Call this on touch event to handle gesture detection.
      */
     fun onTouchEvent(event: MotionEvent): Boolean {
-        // update velocity tracker
-        if (isFlingEnabled) {
-            if (velocityTracker == null) {
-                // To track velocity, it requires to keep track on time and touch events.
-                // Computing release velocity is an expensive task as it involves integration.
-                // This is the reason why VelocityTracker is implemented in native code.
-                // Here we are creating [VelocityTracker] object in the native space.
-                velocityTracker = VelocityTracker.obtain()
-            }
-            // Every touch event must be tracked.
-            velocityTracker?.addMovement(event)
-        }
-        // handle touch events
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                // ACTION_DOWN is called when the first pointer touches the screen.
-                // At this time, touch down point is taken as the focus point.
-                // Focus point is the point around which scaling and rotation is performed.
-                // In this case, focus point is the touch down point.
-                // We keep track on the previous focus point to calculate the translation.
-                downFocusX = event.x
-                downFocusY = event.y
-                previousFocusX = downFocusX
-                previousFocusY = downFocusY
-                event.savePointers()
-                // cancel ongoing fling animations
                 cancelAnims()
-                updatePivotPoint(downFocusX, downFocusY)
-                // this is required to detect tap event
-                alwaysInTapRegion = true
-                gestureDetectorListener.onZoomStart(downFocusX to downFocusY, _drawMatrix)
+                velocityTracker.clear()
+                velocityTracker.addMovement(event)
+                val (focusX, focusY) = event.focusPoint()
+                downFocusX = focusX
+                downFocusY = focusY
+                previousFocusX = focusX
+                previousFocusY = focusY
+                detectSingleTap = true
+                event.savePointers()
+                gestureDetectorListener.onTransformStart(previousFocusX, previousFocusY, _drawMatrix.matrix)
             }
             MotionEvent.ACTION_POINTER_DOWN -> {
-                // In a multitouch screen, subsequent touch down events are called as ACTION_POINTER_DOWN.
-                // At this time, the focus point is calculated by averaging the touch points.
-                // Since a new pointer is added to the list of pointers, we need to update the pivot point.
-                updateTouchParameters(event)
+                detectSingleTap = false
+                event.updateTransformParams()
+            }
+            MotionEvent.ACTION_MOVE -> {
+                val (focusX, focusY) = event.focusPoint()
+                // update single tap flag
+                if (detectSingleTap) {
+                    val dx = focusX - downFocusX
+                    val dy = focusY - downFocusY
+                    val ds = dx * dx + dy * dy
+                    if (ds > touchSlopSquare) {
+                        detectSingleTap = false
+                    } else {
+                        val dt = event.eventTime - event.downTime
+                        if (dt > ViewConfiguration.getTapTimeout()) {
+                            detectSingleTap = false
+                        }
+                    }
+                }
+                // update velocity tracker
+                velocityTracker?.addMovement(event)
+                // update transform
+                val touchSpan = event.touchSpan(focusX, focusY)
+                if (isScaleEnabled) {
+                    val scaling = touchSpan / previousTouchSpan
+                    _drawMatrix.postScale(scaling, focusX, focusY)
+                }
+                if (isRotateEnabled) {
+                    val rotation = event.rotation(focusX, focusY)
+                    _drawMatrix.postRotate(rotation, focusX, focusY)
+                }
+                if (isTranslateEnabled) {
+                    val translationX = focusX - previousFocusX
+                    val translationY = focusY - previousFocusY
+                    _drawMatrix.postTranslate(translationX, translationY)
+                }
+                previousFocusX = focusX
+                previousFocusY = focusY
+                previousTouchSpan = touchSpan
+                event.savePointers()
+                // inform listeners
+                informTransformUpdated()
             }
             MotionEvent.ACTION_POINTER_UP -> {
+                val (focusX, focusY) = event.focusPoint()
+                previousFocusX = focusX
+                previousFocusY = focusY
+                previousTouchSpan = event.touchSpan(focusX, focusY)
+                detectSingleTap = false
                 // Check the dot product of current velocities.
                 // If the pointer that left was opposing another velocity vector, clear.
                 if (isFlingEnabled) {
-                    velocityTracker?.let { tracker ->
-                        tracker.computeCurrentVelocity(1000, MAX_FLING_VELOCITY)
-                        val upIndex: Int = event.actionIndex
-                        val id1: Int = event.getPointerId(upIndex)
-                        val x1 = tracker.getXVelocity(id1)
-                        val y1 = tracker.getYVelocity(id1)
-                        for (i in 0 until event.pointerCount) {
-                            if (i == upIndex) continue
-                            val id2: Int = event.getPointerId(i)
-                            val x = x1 * tracker.getXVelocity(id2)
-                            val y = y1 * tracker.getYVelocity(id2)
-                            val dot = x + y
-                            if (dot < 0) {
-                                tracker.clear()
-                                break
-                            }
+                    velocityTracker.computeCurrentVelocity(1000, MAX_FLING_VELOCITY)
+                    val upIndex: Int = event.actionIndex
+                    val id1: Int = event.getPointerId(upIndex)
+                    val x1 = velocityTracker.getXVelocity(id1)
+                    val y1 = velocityTracker.getYVelocity(id1)
+                    for (i in 0 until event.pointerCount) {
+                        if (i == upIndex) continue
+                        val id2 = event.getPointerId(i)
+                        val x = x1 * velocityTracker.getXVelocity(id2)
+                        val y = y1 * velocityTracker.getYVelocity(id2)
+                        val dot = x + y
+                        if (dot < 0) {
+                            velocityTracker.clear()
+                            break
                         }
                     }
-                }
-                updateTouchParameters(event)
-            }
-            MotionEvent.ACTION_MOVE -> {
-                val (focusX, focusY) = event.focalPoint()
-                if (alwaysInTapRegion) {
-                    val deltaX = focusX - downFocusX
-                    val deltaY = focusY - downFocusY
-                    val distance = (deltaX * deltaX) + (deltaY * deltaY)
-                    if (distance > touchSlopSquare) {
-                        alwaysInTapRegion = false
-                    } else {
-                        val deltaTime = event.eventTime - event.downTime
-                        if (deltaTime > SINGLE_TAP_TIMEOUT) {
-                            alwaysInTapRegion = false
-                        }
-                    }
-                }
-                if (!alwaysInTapRegion) {
-                    if (event.pointerCount > 1) {
-                        if (isScaleEnabled) {
-                            val touchSpan = event.touchSpan(focusX, focusY)
-                            scaling *= scaling(touchSpan)
-                            scaling = clamp(scaling, MIN_SCALE, MAX_SCALE)
-                            previousTouchSpan = touchSpan
-                        }
-                        if (isRotationEnabled) {
-                            rotation += event.rotation(focusX, focusY)
-                        }
-                        if (isTranslationEnabled) {
-                            val (translationX, translationY) = translation(focusX, focusY)
-                            this.translationX += translationX
-                            this.translationY += translationY
-                        }
-                    } else {
-                        if (isTranslationEnabled) {
-                            val (translationX, translationY) = translation(focusX, focusY)
-                            this.translationX += translationX
-                            this.translationY += translationY
-                        }
-                    }
-                    previousFocusX = focusX
-                    previousFocusY = focusY
-                    updateDrawMatrix()
-                    event.savePointers()
-                    informUpdated()
                 }
             }
             MotionEvent.ACTION_UP -> {
-                val focusX = event.x
-                val focusY = event.y
-                // single tap
-                val deltaTime = event.eventTime - event.downTime
-                if (alwaysInTapRegion && deltaTime < SINGLE_TAP_TIMEOUT) {
-                    gestureDetectorListener.onSingleTap(focusX to focusY)
-                } else {
-                    // do fling animation
-                    if (isFlingEnabled) {
-                        var flingAboutToComplete = false
-                        velocityTracker?.let { tracker ->
-                            val pointerId: Int = event.getPointerId(0)
-                            tracker.computeCurrentVelocity(1000, MAX_FLING_VELOCITY)
-                            val velocityY: Float = tracker.getYVelocity(pointerId)
-                            val velocityX: Float = tracker.getXVelocity(pointerId)
-                            if (abs(velocityY) > MIN_FLING_VELOCITY || abs(velocityX) > MIN_FLING_VELOCITY) {
-                                val translateX = translationX
-                                val translateY = translationY
-                                val valueHolder = FloatValueHolder()
-                                flingAnimX = FlingAnimation(valueHolder).apply {
-                                    setStartVelocity(velocityX)
-                                    setStartValue(0f)
-                                    addUpdateListener { _, value, _ ->
-                                        translationX = translateX + value
-                                        updateDrawMatrix()
-                                        informUpdated()
-                                    }
-                                    addEndListener { _, _, _, _ ->
-                                        if (flingAboutToComplete) {
-                                            gestureDetectorListener.onZoomComplete(focusX to focusY, _drawMatrix)
-                                        } else {
-                                            flingAboutToComplete = true
-                                        }
-                                    }
-                                    start()
-                                }
-                                flingAnimY = FlingAnimation(valueHolder).apply {
-                                    setStartVelocity(velocityY)
-                                    setStartValue(0f)
-                                    addUpdateListener { _, value, _ ->
-                                        translationY = translateY + value
-                                        updateDrawMatrix()
-                                        informUpdated()
-                                    }
-                                    addEndListener { _, _, _, _ ->
-                                        if (flingAboutToComplete) {
-                                            gestureDetectorListener.onZoomComplete(focusX to focusY, _drawMatrix)
-                                        } else {
-                                            flingAboutToComplete = true
-                                        }
-                                    }
-                                    start()
-                                }
-                            }
-                            tracker.recycle()
-                            velocityTracker = null
-                        }
-                    } else {
-                        gestureDetectorListener.onZoomComplete(focusX to focusY, _drawMatrix)
+                val (focusX, focusY) = event.focusPoint()
+                velocityTracker.addMovement(event)
+                if (detectSingleTap) {
+                    val dt = event.eventTime - event.downTime
+                    if (dt < ViewConfiguration.getTapTimeout()) {
+                        gestureDetectorListener.onSingleTap(event.x, event.y)
+                        return true
                     }
                 }
+                // do fling animation
+                if (isFlingEnabled) {
+                    var flingAboutToComplete = false
+                    val pointerId: Int = event.getPointerId(0)
+                    velocityTracker.computeCurrentVelocity(1000, MAX_FLING_VELOCITY)
+                    val velocityY: Float = velocityTracker.getYVelocity(pointerId)
+                    val velocityX: Float = velocityTracker.getXVelocity(pointerId)
+                    if (abs(velocityY) > MIN_FLING_VELOCITY || abs(velocityX) > MIN_FLING_VELOCITY) {
+                        val valueHolder = FloatValueHolder()
+                        flingAnimX = FlingAnimation(valueHolder).apply {
+                            setStartVelocity(velocityX)
+                            setStartValue(0f)
+                            var lastValue = 0f
+                            addUpdateListener { _, value, _ ->
+                                val ds = value - lastValue
+                                lastValue = value
+                                _drawMatrix.postTranslate(ds, 0f)
+                                informTransformUpdated()
+                            }
+                            addEndListener { _, _, _, _ ->
+                                if (flingAboutToComplete) {
+                                    gestureDetectorListener.onTransformComplete(focusX, focusY, _drawMatrix.matrix)
+                                } else {
+                                    flingAboutToComplete = true
+                                }
+                            }
+                            start()
+                        }
+                        flingAnimY = FlingAnimation(valueHolder).apply {
+                            setStartVelocity(velocityY)
+                            setStartValue(0f)
+                            var lastValue = 0f
+                            addUpdateListener { _, value, _ ->
+                                val ds = value - lastValue
+                                lastValue = value
+                                _drawMatrix.postTranslate(0f, ds)
+                                informTransformUpdated()
+                            }
+                            addEndListener { _, _, _, _ ->
+                                if (flingAboutToComplete) {
+                                    gestureDetectorListener.onTransformComplete(focusX, focusY, _drawMatrix.matrix)
+                                } else {
+                                    flingAboutToComplete = true
+                                }
+                            }
+                            start()
+                        }
+                    }
+                    velocityTracker.clear()
+                } else {
+                    gestureDetectorListener.onTransformComplete(focusX, focusY, _drawMatrix.matrix)
+                }
+                previousFocusX = focusX
+                previousFocusY = focusY
+                previousTouchSpan = event.touchSpan(focusX, focusY)
             }
         }
         return true
     }
 
-    // update focus point, touch span and pivot point
-    private fun updateTouchParameters(event: MotionEvent) {
-        alwaysInTapRegion = false
-        val (focusX, focusY) = event.focalPoint()
+    private fun informTransformUpdated() {
+        gestureDetectorListener.onTransformUpdate(previousFocusX, previousFocusY, _lastDrawMatrix.matrix, _drawMatrix.matrix)
+    }
+
+    private fun MotionEvent.updateTransformParams() {
+        val (focusX, focusY) = focusPoint()
         previousFocusX = focusX
         previousFocusY = focusY
-        previousTouchSpan = event.touchSpan(focusX, focusY)
-        updatePivotPoint(focusX, focusY)
-        updateDrawMatrix()
-        event.savePointers()
-        informUpdated()
+        previousTouchSpan = touchSpan(focusX, focusY)
+        savePointers()
     }
 
-    private fun informUpdated() {
-        gestureDetectorListener.onZoomUpdate(previousDrawMatrix, _drawMatrix)
-    }
-
-    // draw matrix is used to transform child view when drawing on the canvas
-    private fun updateDrawMatrix(inform: Boolean = true) {
-        previousDrawMatrix.set(_drawMatrix)
-        _drawMatrix.reset()
-        _drawMatrix.preScale(scaling, scaling, pivotX, pivotY)
-        _drawMatrix.preRotate(rotation, pivotX, pivotY)
-        _drawMatrix.postTranslate(translationX, translationY)
-        drawMatrixChanged = true
-        if (inform) {
-            informUpdated()
-        }
-    }
-
-    private fun updateDrawMatrix(matrix: Matrix, inform: Boolean = true) {
-        previousDrawMatrix.set(_drawMatrix)
-        _drawMatrix.set(matrix)
-        drawMatrixChanged = true
-        if (inform) {
-            informUpdated()
-        }
-    }
-
-    private fun updatePivotPoint(focusX: Float, focusY: Float) {
-        // Location of the pivot point doesn't get changed by rotation or scaling.
-        // Translation is calculated from the new pivot point.
-        // So we have to compensate the translation change due to the new pivot point.
-        val pivotPoint = floatArrayOf(focusX, focusY)
-        _drawMatrix.invert(_touchMatrix)
-        _touchMatrix.mapPoints(pivotPoint)
-        pivotX = pivotPoint[0]
-        pivotY = pivotPoint[1]
-        // correct pivot error
-        translationX = focusX - pivotX
-        translationY = focusY - pivotY
-    }
-
-    private fun MotionEvent.focalPoint(): Pair<Float, Float> {
+    private fun MotionEvent.focusPoint(): Pair<Float, Float> {
         val upIndex = if (actionMasked == MotionEvent.ACTION_POINTER_UP) actionIndex else -1
         var sumX = 0f
         var sumY = 0f
@@ -564,6 +434,70 @@ class TransformGestureDetector(
     protected fun finalize() {
         // since velocity tracker is a natively allocated object, it should be explicitly released.
         velocityTracker?.recycle()
+    }
+
+    private class DrawMatrix {
+        val matrix = Matrix()
+        val inverse: Matrix
+            get() {
+                if (changed) {
+                    matrix.invert(tempMatrix)
+                }
+                return tempMatrix
+            }
+        private val tempMatrix = Matrix()
+        private var changed = false
+
+        fun set(m: DrawMatrix) {
+            matrix.set(m.matrix)
+            changed = true
+        }
+
+        fun set(m: Matrix) {
+            matrix.set(m)
+            changed = true
+        }
+
+        fun setScale(s: Float, px: Float, py: Float) {
+            matrix.setScale(s, s, px, py)
+            changed = true
+        }
+
+        fun setRotate(r: Float, px: Float, py: Float) {
+            matrix.setRotate(r, px, py)
+            changed = true
+        }
+
+        fun setTranslate(tx: Float, ty: Float) {
+            matrix.setTranslate(tx, ty)
+            changed = true
+        }
+
+        fun postScale(s: Float, px: Float, py: Float) {
+            matrix.postScale(s, s, px, py)
+            changed = true
+        }
+
+        fun postRotate(r: Float, px: Float, py: Float) {
+            matrix.postRotate(r, px, py)
+            changed = true
+        }
+
+        fun postTranslate(tx: Float, ty: Float) {
+            matrix.postTranslate(tx, ty)
+            changed = true
+        }
+
+        fun postConcat(m: Matrix) {
+            matrix.postConcat(m)
+            changed = true
+        }
+
+        fun reset() {
+            matrix.reset()
+            changed = true
+        }
+
     }
 
 }
