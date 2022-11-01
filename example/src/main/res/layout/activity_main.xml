@@ -11,53 +11,48 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <ImageView
-            android:layout_width="64dp"
-            android:layout_height="64dp"
-            android:layout_gravity="center"
-            android:contentDescription="@string/sample_zoom_image"
-            android:src="@drawable/ic_baseline_image_24" />
+        <com.aureusapps.android.transformlayout.example.PainterLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
 
     </com.aureusapps.android.transformlayout.TransformLayout>
 
-    <LinearLayout
+    <com.google.android.material.button.MaterialButtonToggleGroup
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
-        android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent">
 
-        <com.google.android.material.button.MaterialButton
+        <com.aureusapps.android.transformlayout.example.UncheckableButton
             android:id="@+id/zoom_in_button"
             style="@style/Widget.App.Button.OutlinedButton.IconOnly"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:icon="@drawable/ic_baseline_zoom_in_24" />
 
-        <Space
-            android:layout_width="16dp"
-            android:layout_height="16dp" />
-
-        <com.google.android.material.button.MaterialButton
+        <com.aureusapps.android.transformlayout.example.UncheckableButton
             android:id="@+id/reset_zoom_button"
             style="@style/Widget.App.Button.OutlinedButton.IconOnly"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:icon="@drawable/ic_baseline_fullscreen_24" />
 
-        <Space
-            android:layout_width="16dp"
-            android:layout_height="16dp" />
-
-        <com.google.android.material.button.MaterialButton
+        <com.aureusapps.android.transformlayout.example.UncheckableButton
             android:id="@+id/zoom_out_button"
             style="@style/Widget.App.Button.OutlinedButton.IconOnly"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:icon="@drawable/ic_baseline_zoom_out_24" />
 
-    </LinearLayout>
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/draw_button"
+            style="@style/Widget.App.Button.OutlinedButton.IconOnly"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:icon="@drawable/ic_outline_draw_24" />
+
+    </com.google.android.material.button.MaterialButtonToggleGroup>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

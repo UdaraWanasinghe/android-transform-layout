@@ -10,16 +10,12 @@ import androidx.dynamicanimation.animation.FloatValueHolder
 import kotlin.math.abs
 import kotlin.math.atan2
 
-@Suppress("MemberVisibilityCanBePrivate", "unused")
-
 class TransformGestureDetector(
     context: Context,
     private val gestureDetectorListener: TransformGestureDetectorListener
 ) {
 
     companion object {
-        private const val MIN_SCALE = 0.01f
-        private const val MAX_SCALE = 100f
         private const val MIN_FLING_VELOCITY = 50f
         private const val MAX_FLING_VELOCITY = 8000f
     }
@@ -29,32 +25,21 @@ class TransformGestureDetector(
     var isTranslateEnabled = true
     var isFlingEnabled = true
 
-    val drawMatrix: Matrix
-        get() {
-            tempDrawMatrix.set(_drawMatrix.matrix)
-            return tempDrawMatrix
-        }
-
-    private val _touchMatrix = Matrix()
     private val _drawMatrix = DrawMatrix()
-    private val tempDrawMatrix = Matrix()
-    private val pointerMap: HashMap<Int, Position> = HashMap() // touch event pointers
+    val drawMatrix: Matrix get() = _drawMatrix.matrix
+    val touchMatrix: Matrix get() = _drawMatrix.inverse
 
-    var previousFocusX = 0f
-    var previousFocusY = 0f
-    val pivotPoint get() = Position(previousFocusX, previousFocusY)
-    private var previousTouchSpan = 1f
-
-    private val velocityTracker = VelocityTracker.obtain()
-    private var flingAnimX: FlingAnimation? = null
-    private var flingAnimY: FlingAnimation? = null
-
-    private var detectSingleTap: Boolean = true
     private val touchSlopSquare: Int
     private var downFocusX: Float = 0f
     private var downFocusY: Float = 0f
-
-    private val _lastDrawMatrix = DrawMatrix()
+    private var previousFocusX = 0f
+    private var previousFocusY = 0f
+    private var previousTouchSpan = 1f
+    private val pointerMap: HashMap<Int, Position> = HashMap() // touch event pointers
+    private var detectSingleTap = true
+    private val velocityTracker = VelocityTracker.obtain()
+    private var flingAnimX: FlingAnimation? = null
+    private var flingAnimY: FlingAnimation? = null
 
     init {
         val configuration = ViewConfiguration.get(context)
@@ -62,15 +47,16 @@ class TransformGestureDetector(
         touchSlopSquare = touchSlop * touchSlop
     }
 
-    /**
-     * Update scaling, rotation and translation values.
-     *
-     * @param scaling Scaling value around the given pivot point or the previous pivot point.
-     * @param rotation Rotation value around the given pivot point or the previous pivot point.
-     * @param translation Translation value to set.
-     * @param pivot Point to scale and rotate around.
-     * @param inform Whether to inform listeners about the update.
-     */
+    @Suppress("unused")
+            /**
+             * Update scaling, rotation and translation values.
+             *
+             * @param scaling Scaling value around the given pivot point or the previous pivot point.
+             * @param rotation Rotation value around the given pivot point or the previous pivot point.
+             * @param translation Translation value to set.
+             * @param pivot Point to scale and rotate around.
+             * @param inform Whether to inform listeners about the update.
+             */
     fun setTransform(
         scaling: Float? = null,
         rotation: Float? = null,
@@ -78,65 +64,76 @@ class TransformGestureDetector(
         pivot: Position? = null,
         inform: Boolean = true
     ) {
+        if (rotation == null && scaling == null && translation == null) return
         cancelAnims()
-        _lastDrawMatrix.set(_drawMatrix)
-        if (pivot != null) {
-            previousFocusX = pivot.first
-            previousFocusY = pivot.second
-        }
-        if (scaling != null) {
-            _drawMatrix.setScale(scaling, previousFocusX, previousFocusY)
-        }
-        if (rotation != null) {
-            _drawMatrix.setRotate(rotation, previousFocusX, previousFocusY)
-        }
-        if (translation != null) {
-            _drawMatrix.setTranslate(translation.first, translation.second)
+        _drawMatrix.mutate { mutableMatrix ->
+            mutableMatrix.copy(_drawMatrix)
+            if (pivot != null) {
+                previousFocusX = pivot.first
+                previousFocusY = pivot.second
+            }
+            if (scaling != null) {
+                mutableMatrix.setScale(scaling, previousFocusX, previousFocusY)
+            }
+            if (rotation != null) {
+                mutableMatrix.setRotate(rotation, previousFocusX, previousFocusY)
+            }
+            if (translation != null) {
+                mutableMatrix.setTranslate(translation.first, translation.second)
+            }
         }
         if (inform) {
             informTransformUpdated()
         }
     }
 
-    /**
-     * Copy the given transform matrix to the draw matrix.
-     *
-     * @param matrix Transform matrix to copy.
-     * @param inform Whether to inform listeners about the update.
-     */
+    @Suppress("unused")
+            /**
+             * Copy the given transform matrix to the draw matrix.
+             *
+             * @param matrix Transform matrix to copy.
+             * @param inform Whether to inform listeners about the update.
+             */
     fun setTransform(matrix: Matrix, inform: Boolean = true) {
+        if (_drawMatrix.matrix == matrix) return
         cancelAnims()
-        _lastDrawMatrix.set(_drawMatrix)
-        _drawMatrix.set(matrix)
+        _drawMatrix.mutate { mutableMatrix ->
+            mutableMatrix.copy(matrix)
+        }
         if (inform) {
             informTransformUpdated()
         }
     }
 
-    /**
-     * Concatenate the given transform matrix to the current draw matrix.
-     *
-     * @param matrix Transform matrix to concatenate.
-     * @param inform Whether to inform listeners about the update.
-     */
+    @Suppress("unused")
+            /**
+             * Concatenate the given transform matrix to the current draw matrix.
+             *
+             * @param matrix Transform matrix to concatenate.
+             * @param inform Whether to inform listeners about the update.
+             */
     fun concatTransform(matrix: Matrix, inform: Boolean = true) {
         cancelAnims()
-        _lastDrawMatrix.set(matrix)
-        _drawMatrix.postConcat(matrix)
+        _drawMatrix.mutate { mutableMatrix ->
+            mutableMatrix.postConcat(matrix)
+        }
         if (inform) {
             informTransformUpdated()
         }
     }
 
-    /**
-     * Reset transformation matrix to an identity matrix.
-     *
-     * @param inform Whether to inform listeners about the update.
-     */
+    @Suppress("unused")
+            /**
+             * Reset transformation matrix to an identity matrix.
+             *
+             * @param inform Whether to inform listeners about the update.
+             */
     fun resetTransform(inform: Boolean = true) {
+        if (_drawMatrix.matrix.isIdentity) return
         cancelAnims()
-        _lastDrawMatrix.set(_drawMatrix)
-        _drawMatrix.reset()
+        _drawMatrix.mutate { mutableMatrix ->
+            mutableMatrix.reset()
+        }
         if (inform) {
             informTransformUpdated()
         }
@@ -184,18 +181,20 @@ class TransformGestureDetector(
                 velocityTracker?.addMovement(event)
                 // update transform
                 val touchSpan = event.touchSpan(focusX, focusY)
-                if (isScaleEnabled) {
-                    val scaling = touchSpan / previousTouchSpan
-                    _drawMatrix.postScale(scaling, focusX, focusY)
-                }
-                if (isRotateEnabled) {
-                    val rotation = event.rotation(focusX, focusY)
-                    _drawMatrix.postRotate(rotation, focusX, focusY)
-                }
-                if (isTranslateEnabled) {
-                    val translationX = focusX - previousFocusX
-                    val translationY = focusY - previousFocusY
-                    _drawMatrix.postTranslate(translationX, translationY)
+                _drawMatrix.mutate { mutableMatrix ->
+                    if (isScaleEnabled) {
+                        val scaling = touchSpan / previousTouchSpan
+                        mutableMatrix.postScale(scaling, focusX, focusY)
+                    }
+                    if (isRotateEnabled) {
+                        val rotation = event.rotation(focusX, focusY)
+                        mutableMatrix.postRotate(rotation, focusX, focusY)
+                    }
+                    if (isTranslateEnabled) {
+                        val translationX = focusX - previousFocusX
+                        val translationY = focusY - previousFocusY
+                        mutableMatrix.postTranslate(translationX, translationY)
+                    }
                 }
                 previousFocusX = focusX
                 previousFocusY = focusY
@@ -232,7 +231,6 @@ class TransformGestureDetector(
                 }
             }
             MotionEvent.ACTION_UP -> {
-                val (focusX, focusY) = event.focusPoint()
                 velocityTracker.addMovement(event)
                 if (detectSingleTap) {
                     val dt = event.eventTime - event.downTime
@@ -254,15 +252,17 @@ class TransformGestureDetector(
                             setStartVelocity(velocityX)
                             setStartValue(0f)
                             var lastValue = 0f
-                            addUpdateListener { _, value, _ ->
-                                val ds = value - lastValue
-                                lastValue = value
-                                _drawMatrix.postTranslate(ds, 0f)
-                                informTransformUpdated()
+                            _drawMatrix.mutate { mutableMatrix ->
+                                addUpdateListener { _, value, _ ->
+                                    val ds = value - lastValue
+                                    lastValue = value
+                                    mutableMatrix.postTranslate(ds, 0f)
+                                    informTransformUpdated()
+                                }
                             }
                             addEndListener { _, _, _, _ ->
                                 if (flingAboutToComplete) {
-                                    gestureDetectorListener.onTransformComplete(focusX, focusY, _drawMatrix.matrix)
+                                    gestureDetectorListener.onTransformComplete(previousFocusX, previousFocusY, _drawMatrix.matrix)
                                 } else {
                                     flingAboutToComplete = true
                                 }
@@ -273,15 +273,17 @@ class TransformGestureDetector(
                             setStartVelocity(velocityY)
                             setStartValue(0f)
                             var lastValue = 0f
-                            addUpdateListener { _, value, _ ->
-                                val ds = value - lastValue
-                                lastValue = value
-                                _drawMatrix.postTranslate(0f, ds)
-                                informTransformUpdated()
+                            _drawMatrix.mutate { mutableMatrix ->
+                                addUpdateListener { _, value, _ ->
+                                    val ds = value - lastValue
+                                    lastValue = value
+                                    mutableMatrix.postTranslate(0f, ds)
+                                    informTransformUpdated()
+                                }
                             }
                             addEndListener { _, _, _, _ ->
                                 if (flingAboutToComplete) {
-                                    gestureDetectorListener.onTransformComplete(focusX, focusY, _drawMatrix.matrix)
+                                    gestureDetectorListener.onTransformComplete(previousFocusX, previousFocusY, _drawMatrix.matrix)
                                 } else {
                                     flingAboutToComplete = true
                                 }
@@ -291,18 +293,15 @@ class TransformGestureDetector(
                     }
                     velocityTracker.clear()
                 } else {
-                    gestureDetectorListener.onTransformComplete(focusX, focusY, _drawMatrix.matrix)
+                    gestureDetectorListener.onTransformComplete(previousFocusX, previousFocusY, _drawMatrix.matrix)
                 }
-                previousFocusX = focusX
-                previousFocusY = focusY
-                previousTouchSpan = event.touchSpan(focusX, focusY)
             }
         }
         return true
     }
 
     private fun informTransformUpdated() {
-        gestureDetectorListener.onTransformUpdate(previousFocusX, previousFocusY, _lastDrawMatrix.matrix, _drawMatrix.matrix)
+        gestureDetectorListener.onTransformUpdate(previousFocusX, previousFocusY, _drawMatrix.lastMatrix, _drawMatrix.matrix)
     }
 
     private fun MotionEvent.updateTransformParams() {
@@ -355,11 +354,6 @@ class TransformGestureDetector(
         return previousTouchSpan
     }
 
-    private fun scaling(currentTouchSpan: Float): Float {
-        // scaling is calculated relative to the previous touch span
-        return currentTouchSpan / previousTouchSpan
-    }
-
     /**
      * Returns rotation around the focus point in degrees compared to previous pointer positions.
      */
@@ -395,14 +389,6 @@ class TransformGestureDetector(
         return 0f
     }
 
-    private fun translation(
-        currentFocusX: Float,
-        currentFocusY: Float
-    ): Pair<Float, Float> {
-        // translation is the difference between current focus point and previous focus point
-        return (currentFocusX - previousFocusX) to (currentFocusY - previousFocusY)
-    }
-
     private fun MotionEvent.savePointers() {
         pointerMap.clear()
         // get the pointer id if this event is a pointer up event
@@ -425,9 +411,6 @@ class TransformGestureDetector(
         flingAnimY = null
     }
 
-    private val Float.toRadians: Float
-        get() = this * Math.PI.toFloat() / 180f
-
     private val Float.toDegrees: Float
         get() = this * 180f / Math.PI.toFloat()
 
@@ -438,64 +421,76 @@ class TransformGestureDetector(
 
     private class DrawMatrix {
         val matrix = Matrix()
+        val lastMatrix = Matrix()
         val inverse: Matrix
             get() {
-                if (changed) {
-                    matrix.invert(tempMatrix)
+                if (matrixChanged) {
+                    matrix.invert(invertedMatrix)
                 }
-                return tempMatrix
+                return invertedMatrix
             }
-        private val tempMatrix = Matrix()
-        private var changed = false
+        private val invertedMatrix = Matrix()
+        private var matrixChanged = false
+        private val mutableMatrix = MutableDrawMatrix()
 
-        fun set(m: DrawMatrix) {
-            matrix.set(m.matrix)
-            changed = true
+        fun mutate(block: (MutableDrawMatrix) -> Unit) {
+            lastMatrix.set(matrix)
+            block(mutableMatrix)
+            matrixChanged = true
         }
 
-        fun set(m: Matrix) {
-            matrix.set(m)
-            changed = true
-        }
+        inner class MutableDrawMatrix {
 
-        fun setScale(s: Float, px: Float, py: Float) {
-            matrix.setScale(s, s, px, py)
-            changed = true
-        }
+            fun copy(m: DrawMatrix) {
+                matrix.set(m.matrix)
+                matrixChanged = true
+            }
 
-        fun setRotate(r: Float, px: Float, py: Float) {
-            matrix.setRotate(r, px, py)
-            changed = true
-        }
+            fun copy(m: Matrix) {
+                matrix.set(m)
+                matrixChanged = true
+            }
 
-        fun setTranslate(tx: Float, ty: Float) {
-            matrix.setTranslate(tx, ty)
-            changed = true
-        }
+            fun setScale(s: Float, px: Float, py: Float) {
+                matrix.setScale(s, s, px, py)
+                matrixChanged = true
+            }
 
-        fun postScale(s: Float, px: Float, py: Float) {
-            matrix.postScale(s, s, px, py)
-            changed = true
-        }
+            fun setRotate(r: Float, px: Float, py: Float) {
+                matrix.setRotate(r, px, py)
+                matrixChanged = true
+            }
 
-        fun postRotate(r: Float, px: Float, py: Float) {
-            matrix.postRotate(r, px, py)
-            changed = true
-        }
+            fun setTranslate(tx: Float, ty: Float) {
+                matrix.setTranslate(tx, ty)
+                matrixChanged = true
+            }
 
-        fun postTranslate(tx: Float, ty: Float) {
-            matrix.postTranslate(tx, ty)
-            changed = true
-        }
+            fun postScale(s: Float, px: Float, py: Float) {
+                matrix.postScale(s, s, px, py)
+                matrixChanged = true
+            }
 
-        fun postConcat(m: Matrix) {
-            matrix.postConcat(m)
-            changed = true
-        }
+            fun postRotate(r: Float, px: Float, py: Float) {
+                matrix.postRotate(r, px, py)
+                matrixChanged = true
+            }
 
-        fun reset() {
-            matrix.reset()
-            changed = true
+            fun postTranslate(tx: Float, ty: Float) {
+                matrix.postTranslate(tx, ty)
+                matrixChanged = true
+            }
+
+            fun postConcat(m: Matrix) {
+                matrix.postConcat(m)
+                matrixChanged = true
+            }
+
+            fun reset() {
+                matrix.reset()
+                matrixChanged = true
+            }
+
         }
 
     }

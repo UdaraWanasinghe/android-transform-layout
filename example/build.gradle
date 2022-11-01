@@ -38,6 +38,7 @@ dependencies {
     implementation libs.appcompat
     implementation libs.material
     implementation libs.constraintlayout
+    implementation libs.aureusapps.extensions
     implementation project(':transform-layout')
 
     testImplementation libs.junit
