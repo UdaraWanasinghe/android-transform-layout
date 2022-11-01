@@ -44,7 +44,7 @@ class TransformLayout @JvmOverloads constructor(
             transformGestureDetector.isFlingEnabled = value
         }
 
-    var isTransformEnabled: Boolean = false
+    var isTransformEnabled = false
 
     private val gesturedDetectorListeners = mutableSetOf<TransformGestureDetectorListener>()
     private val gestureDetectorListener = object : TransformGestureDetectorListener {

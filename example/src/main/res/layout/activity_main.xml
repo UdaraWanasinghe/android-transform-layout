@@ -30,6 +30,7 @@
             style="@style/Widget.App.Button.OutlinedButton.IconOnly"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            app:backgroundTint="@android:color/white"
             app:icon="@drawable/ic_baseline_zoom_in_24" />
 
         <com.aureusapps.android.transformlayout.example.UncheckableButton
@@ -37,6 +38,7 @@
             style="@style/Widget.App.Button.OutlinedButton.IconOnly"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            app:backgroundTint="@android:color/white"
             app:icon="@drawable/ic_baseline_fullscreen_24" />
 
         <com.aureusapps.android.transformlayout.example.UncheckableButton
@@ -44,6 +46,7 @@
             style="@style/Widget.App.Button.OutlinedButton.IconOnly"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            app:backgroundTint="@android:color/white"
             app:icon="@drawable/ic_baseline_zoom_out_24" />
 
         <com.google.android.material.button.MaterialButton
@@ -51,6 +54,7 @@
             style="@style/Widget.App.Button.OutlinedButton.IconOnly"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            app:backgroundTint="@android:color/white"
             app:icon="@drawable/ic_outline_draw_24" />
 
     </com.google.android.material.button.MaterialButtonToggleGroup>
