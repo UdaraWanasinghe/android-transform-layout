@@ -8,4 +8,5 @@
         <item name="translationEnabled">true</item>
         <item name="flingEnabled">true</item>
     </style>
+
 </resources>
