@@ -9,6 +9,7 @@ import android.graphics.Path
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
+import androidx.core.view.doOnPreDraw
 import com.aureusapps.android.extensions.dp
 
 @SuppressLint("ClickableViewAccessibility")
@@ -26,6 +27,12 @@ class PainterLayout @JvmOverloads constructor(
         strokeWidth = 4f.dp
     }
     private val path = Path()
+
+    init {
+        doOnPreDraw {
+            path.addCircle(width / 2f, height / 2f, 64f.dp, Path.Direction.CW)
+        }
+    }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.actionMasked) {

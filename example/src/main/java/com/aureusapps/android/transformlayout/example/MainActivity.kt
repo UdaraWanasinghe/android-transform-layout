@@ -4,6 +4,9 @@ import android.graphics.Matrix
 import android.os.Bundle
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.aureusapps.android.extensions.getRotation
+import com.aureusapps.android.extensions.getScaling
+import com.aureusapps.android.extensions.translation
 import com.aureusapps.android.transformlayout.TransformGestureDetectorListener
 import com.aureusapps.android.transformlayout.TransformLayout
 import com.google.android.material.button.MaterialButton
@@ -32,26 +35,47 @@ class MainActivity : AppCompatActivity() {
         drawButton = findViewById(R.id.draw_button)
         logTextView = findViewById(R.id.log_text_view)
 
-        val logTextBuilder = StringBuilder()
         transformLayout.addTransformGestureDetectorListener(object : TransformGestureDetectorListener {
+            private val f = "%.2f"
+            private val b = StringBuilder()
+            private val m = Matrix()
+            private var t = System.currentTimeMillis()
+
             override fun onTransformStart(px: Float, py: Float, matrix: Matrix) {
-                logTextBuilder.insert(0, "Transform started: $px, $py\n")
-                logTextView.text = logTextBuilder.toString()
+                appendToLogText("Transform started", matrix, px, py)
             }
 
             override fun onTransformUpdate(px: Float, py: Float, oldMatrix: Matrix, newMatrix: Matrix) {
-
+                if (System.currentTimeMillis() - t > 100) {
+                    t = System.currentTimeMillis()
+                    appendToLogText("Transform updated", newMatrix, px, py)
+                }
             }
 
             override fun onTransformComplete(px: Float, py: Float, matrix: Matrix) {
-                logTextBuilder.insert(0, "Transform completed: $px, $py\n")
-                logTextView.text = logTextBuilder.toString()
+                appendToLogText("Transform completed", matrix, px, py)
             }
 
             override fun onSingleTap(px: Float, py: Float) {
-                logTextBuilder.insert(0, "Single tap detected: $px, $py\n")
-                logTextView.text = logTextBuilder.toString()
+                b.insert(0, "Single tap detected[px:$px, py:$py]\n")
+                logTextView.text = b.toString()
             }
+
+            private fun appendToLogText(text: String, matrix: Matrix, px: Float, py: Float) {
+                m.set(matrix)
+                val (sx, sy) = m.getScaling(px, py)
+                val r = m.getRotation(px, py)
+                val (tx, ty) = m.translation
+                val t = "$text[" +
+                        "tx:${f.format(tx)}, " +
+                        "ty:${f.format(ty)}, " +
+                        "sx:${f.format(sx)}, " +
+                        "sy:${f.format(sy)}, " +
+                        "r:$${f.format(r)}]\n"
+                b.insert(0, t)
+                logTextView.text = b.toString()
+            }
+
         })
         scaleUpButton.setOnClickListener {
             transformLayout.gestureDetector.concatTransform(scaling = 1.2f)

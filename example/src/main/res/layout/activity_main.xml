@@ -10,6 +10,7 @@
         android:id="@+id/log_text_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:textSize="9sp"
         android:typeface="monospace" />
 
     <com.aureusapps.android.transformlayout.TransformLayout

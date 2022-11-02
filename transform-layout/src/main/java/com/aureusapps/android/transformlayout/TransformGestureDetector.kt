@@ -253,7 +253,9 @@ class TransformGestureDetector(
                 previousTouchSpan = touchSpan
                 event.savePointers()
                 // inform listeners
-                informTransformUpdated()
+                if (flagTransformStarted) {
+                    informTransformUpdated()
+                }
             }
             MotionEvent.ACTION_POINTER_UP -> {
                 val (focusX, focusY) = event.focusPoint()
