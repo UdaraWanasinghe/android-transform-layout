@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="TransformLayout">
+        <attr name="transformEnabled" format="boolean" />
+        <attr name="scaleEnabled" format="boolean" />
+        <attr name="rotationEnabled" format="boolean" />
+        <attr name="translationEnabled" format="boolean" />
+        <attr name="flingEnabled" format="boolean" />
+    </declare-styleable>
+    <attr name="transformLayoutStyle" format="reference" />
+</resources>

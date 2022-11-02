@@ -6,6 +6,12 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+    <TextView
+        android:id="@+id/log_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:typeface="monospace" />
+
     <com.aureusapps.android.transformlayout.TransformLayout
         android:id="@+id/zoom_layout"
         android:layout_width="match_parent"

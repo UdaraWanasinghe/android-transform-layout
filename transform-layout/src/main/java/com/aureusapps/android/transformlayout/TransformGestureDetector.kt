@@ -35,11 +35,12 @@ class TransformGestureDetector(
     private var previousFocusX = 0f
     private var previousFocusY = 0f
     private var previousTouchSpan = 1f
-    private val pointerMap: HashMap<Int, Position> = HashMap() // touch event pointers
+    private val pointerMap = HashMap<Int, Pair<Float, Float>>() // touch event pointers
     private var detectSingleTap = true
     private val velocityTracker = VelocityTracker.obtain()
     private var flingAnimX: FlingAnimation? = null
     private var flingAnimY: FlingAnimation? = null
+    private var flagTransformStarted = false
 
     init {
         val configuration = ViewConfiguration.get(context)
@@ -60,8 +61,8 @@ class TransformGestureDetector(
     fun setTransform(
         scaling: Float? = null,
         rotation: Float? = null,
-        translation: Position? = null,
-        pivot: Position? = null,
+        translation: Pair<Float, Float>? = null,
+        pivot: Pair<Float, Float>? = null,
         inform: Boolean = true
     ) {
         if (rotation == null && scaling == null && translation == null) return
@@ -155,11 +156,15 @@ class TransformGestureDetector(
                 previousFocusY = focusY
                 detectSingleTap = true
                 event.savePointers()
-                gestureDetectorListener.onTransformStart(previousFocusX, previousFocusY, _drawMatrix.matrix)
+                flagTransformStarted = false
             }
             MotionEvent.ACTION_POINTER_DOWN -> {
+                val (focusX, focusY) = event.focusPoint()
+                previousFocusX = focusX
+                previousFocusY = focusY
+                previousTouchSpan = event.touchSpan(focusX, focusY)
                 detectSingleTap = false
-                event.updateTransformParams()
+                event.savePointers()
             }
             MotionEvent.ACTION_MOVE -> {
                 val (focusX, focusY) = event.focusPoint()
@@ -181,19 +186,28 @@ class TransformGestureDetector(
                 velocityTracker?.addMovement(event)
                 // update transform
                 val touchSpan = event.touchSpan(focusX, focusY)
-                _drawMatrix.mutate { mutableMatrix ->
-                    if (isScaleEnabled) {
-                        val scaling = touchSpan / previousTouchSpan
-                        mutableMatrix.postScale(scaling, focusX, focusY)
+                // transform is only updated if single tap is not detected
+                // either single tap is out of the detection range or a timeout
+                if (!detectSingleTap) {
+                    // if transform start not signaled, signal it
+                    if (!flagTransformStarted) {
+                        flagTransformStarted = true
+                        gestureDetectorListener.onTransformStart(previousFocusX, previousFocusY, _drawMatrix.matrix)
                     }
-                    if (isRotateEnabled) {
-                        val rotation = event.rotation(focusX, focusY)
-                        mutableMatrix.postRotate(rotation, focusX, focusY)
-                    }
-                    if (isTranslateEnabled) {
-                        val translationX = focusX - previousFocusX
-                        val translationY = focusY - previousFocusY
-                        mutableMatrix.postTranslate(translationX, translationY)
+                    _drawMatrix.mutate { mutableMatrix ->
+                        if (isScaleEnabled) {
+                            val scaling = touchSpan / previousTouchSpan
+                            mutableMatrix.postScale(scaling, focusX, focusY)
+                        }
+                        if (isRotateEnabled) {
+                            val rotation = event.rotation(focusX, focusY)
+                            mutableMatrix.postRotate(rotation, focusX, focusY)
+                        }
+                        if (isTranslateEnabled) {
+                            val translationX = focusX - previousFocusX
+                            val translationY = focusY - previousFocusY
+                            mutableMatrix.postTranslate(translationX, translationY)
+                        }
                     }
                 }
                 previousFocusX = focusX
@@ -241,13 +255,15 @@ class TransformGestureDetector(
                 }
                 // do fling animation
                 if (isFlingEnabled) {
-                    var flingAboutToComplete = false
-                    val pointerId: Int = event.getPointerId(0)
+                    // whoever complete last will inform the complete event
+                    var flagInformComplete = false
+                    val pointerId = event.getPointerId(0)
                     velocityTracker.computeCurrentVelocity(1000, MAX_FLING_VELOCITY)
-                    val velocityY: Float = velocityTracker.getYVelocity(pointerId)
-                    val velocityX: Float = velocityTracker.getXVelocity(pointerId)
+                    val velocityY = velocityTracker.getYVelocity(pointerId)
+                    val velocityX = velocityTracker.getXVelocity(pointerId)
                     if (abs(velocityY) > MIN_FLING_VELOCITY || abs(velocityX) > MIN_FLING_VELOCITY) {
                         val valueHolder = FloatValueHolder()
+                        // start x direction fling animation
                         flingAnimX = FlingAnimation(valueHolder).apply {
                             setStartVelocity(velocityX)
                             setStartValue(0f)
@@ -261,14 +277,15 @@ class TransformGestureDetector(
                                 }
                             }
                             addEndListener { _, _, _, _ ->
-                                if (flingAboutToComplete) {
+                                if (flagInformComplete) {
                                     gestureDetectorListener.onTransformComplete(previousFocusX, previousFocusY, _drawMatrix.matrix)
                                 } else {
-                                    flingAboutToComplete = true
+                                    flagInformComplete = true
                                 }
                             }
                             start()
                         }
+                        // start y direction fling animation
                         flingAnimY = FlingAnimation(valueHolder).apply {
                             setStartVelocity(velocityY)
                             setStartValue(0f)
@@ -282,18 +299,25 @@ class TransformGestureDetector(
                                 }
                             }
                             addEndListener { _, _, _, _ ->
-                                if (flingAboutToComplete) {
+                                if (flagInformComplete) {
                                     gestureDetectorListener.onTransformComplete(previousFocusX, previousFocusY, _drawMatrix.matrix)
                                 } else {
-                                    flingAboutToComplete = true
+                                    flagInformComplete = true
                                 }
                             }
                             start()
                         }
+                    } else {
+                        // fling is enabled, but not enough velocity to start animation
+                        if (flagTransformStarted) {
+                            gestureDetectorListener.onTransformComplete(previousFocusX, previousFocusY, _drawMatrix.matrix)
+                        }
                     }
-                    velocityTracker.clear()
                 } else {
-                    gestureDetectorListener.onTransformComplete(previousFocusX, previousFocusY, _drawMatrix.matrix)
+                    // fling is not enabled
+                    if (flagTransformStarted) {
+                        gestureDetectorListener.onTransformComplete(previousFocusX, previousFocusY, _drawMatrix.matrix)
+                    }
                 }
             }
         }
@@ -302,14 +326,6 @@ class TransformGestureDetector(
 
     private fun informTransformUpdated() {
         gestureDetectorListener.onTransformUpdate(previousFocusX, previousFocusY, _drawMatrix.lastMatrix, _drawMatrix.matrix)
-    }
-
-    private fun MotionEvent.updateTransformParams() {
-        val (focusX, focusY) = focusPoint()
-        previousFocusX = focusX
-        previousFocusY = focusY
-        previousTouchSpan = touchSpan(focusX, focusY)
-        savePointers()
     }
 
     private fun MotionEvent.focusPoint(): Pair<Float, Float> {

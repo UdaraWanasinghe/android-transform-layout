@@ -10,34 +10,39 @@ import android.view.MotionEvent
 import android.view.View
 import android.widget.FrameLayout
 import androidx.core.graphics.withMatrix
+import com.aureusapps.android.extensions.obtainStyledAttributes
 
 @SuppressLint("ClickableViewAccessibility")
 
 class TransformLayout @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
-    defStyleAttr: Int = 0,
-    defStyleRes: Int = 0
+    defStyleAttr: Int = R.attr.transformLayoutStyle,
+    defStyleRes: Int = R.style.TransformLayoutStyle
 ) : FrameLayout(context, attrs, defStyleAttr, defStyleRes) {
 
+    @Suppress("MemberVisibilityCanBePrivate")
     var isScaleEnabled
         get() = transformGestureDetector.isScaleEnabled
         set(value) {
             transformGestureDetector.isScaleEnabled = value
         }
 
+    @Suppress("MemberVisibilityCanBePrivate")
     var isRotationEnabled
         get() = transformGestureDetector.isRotateEnabled
         set(value) {
             transformGestureDetector.isRotateEnabled = value
         }
 
+    @Suppress("MemberVisibilityCanBePrivate")
     var isTranslationEnabled
         get() = transformGestureDetector.isTranslateEnabled
         set(value) {
             transformGestureDetector.isTranslateEnabled = value
         }
 
+    @Suppress("MemberVisibilityCanBePrivate")
     var isFlingEnabled
         get() = transformGestureDetector.isFlingEnabled
         set(value) {
@@ -46,30 +51,40 @@ class TransformLayout @JvmOverloads constructor(
 
     var isTransformEnabled = false
 
-    private val gesturedDetectorListeners = mutableSetOf<TransformGestureDetectorListener>()
+    private val gestureDetectorListeners = mutableSetOf<TransformGestureDetectorListener>()
     private val gestureDetectorListener = object : TransformGestureDetectorListener {
         override fun onTransformStart(px: Float, py: Float, matrix: Matrix) {
             invalidate()
-            gesturedDetectorListeners.forEach { it.onTransformStart(px, py, matrix) }
+            gestureDetectorListeners.forEach { it.onTransformStart(px, py, matrix) }
         }
 
         override fun onTransformUpdate(px: Float, py: Float, oldMatrix: Matrix, newMatrix: Matrix) {
             invalidate()
-            gesturedDetectorListeners.forEach { it.onTransformUpdate(px, py, oldMatrix, newMatrix) }
+            gestureDetectorListeners.forEach { it.onTransformUpdate(px, py, oldMatrix, newMatrix) }
         }
 
         override fun onTransformComplete(px: Float, py: Float, matrix: Matrix) {
             invalidate()
-            gesturedDetectorListeners.forEach { it.onTransformComplete(px, py, matrix) }
+            gestureDetectorListeners.forEach { it.onTransformComplete(px, py, matrix) }
         }
 
         override fun onSingleTap(px: Float, py: Float) {
             invalidate()
-            gesturedDetectorListeners.forEach { it.onSingleTap(px, py) }
+            gestureDetectorListeners.forEach { it.onSingleTap(px, py) }
         }
     }
-
     private val transformGestureDetector = TransformGestureDetector(context, gestureDetectorListener)
+
+    init {
+        obtainStyledAttributes(attrs, R.styleable.TransformLayout, defStyleAttr, defStyleRes).apply {
+            isScaleEnabled = getBoolean(R.styleable.TransformLayout_scaleEnabled, true)
+            isRotationEnabled = getBoolean(R.styleable.TransformLayout_rotationEnabled, true)
+            isTranslationEnabled = getBoolean(R.styleable.TransformLayout_translationEnabled, true)
+            isFlingEnabled = getBoolean(R.styleable.TransformLayout_flingEnabled, true)
+            isTransformEnabled = getBoolean(R.styleable.TransformLayout_transformEnabled, true)
+            recycle()
+        }
+    }
 
     override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
         // This will always receive ACTION_DOWN event.
@@ -104,6 +119,14 @@ class TransformLayout @JvmOverloads constructor(
             result = super.drawChild(canvas, child, drawingTime)
         }
         return result
+    }
+
+    fun addTransformGestureDetectorListener(listener: TransformGestureDetectorListener) {
+        gestureDetectorListeners.add(listener)
+    }
+
+    fun removeTransformGestureDetectorListener(listener: TransformGestureDetectorListener) {
+        gestureDetectorListeners.remove(listener)
     }
 
 }
