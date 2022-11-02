@@ -53,7 +53,7 @@ class TransformGestureDetector(
      * Update scaling, rotation and translation values.
      *
      * @param scaling Scaling value around the given pivot point or the previous pivot point.
-     * @param rotation Rotation value around the given pivot point or the previous pivot point.
+     * @param rotation Rotation value around the given pivot point or the previous pivot point in degrees.
      * @param translation Translation value to set.
      * @param pivot Point to scale and rotate around.
      * @param inform Whether to inform listeners about the update.
@@ -109,8 +109,8 @@ class TransformGestureDetector(
     /**
      * Concat scaling, rotation and translation values to the current transform matrix.
      *
-     * @param scaling Scaling value to concat.
-     * @param rotation Rotation value to concat.
+     * @param scaling Scaling value to concat around the given pivot point or the previous pivot point.
+     * @param rotation Rotation value to concat around the given pivot point or the previous pivot point in degrees.
      * @param translation Translation value to concat.
      * @param pivot Point to scale and rotate around. If not given, the previous pivot point will be used.
      */

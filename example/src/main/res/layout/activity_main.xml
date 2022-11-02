@@ -40,6 +40,14 @@
             app:icon="@drawable/ic_baseline_zoom_in_24" />
 
         <com.aureusapps.android.transformlayout.example.UncheckableButton
+            android:id="@+id/scale_down_button"
+            style="@style/Widget.App.Button.OutlinedButton.IconOnly"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:backgroundTint="@android:color/white"
+            app:icon="@drawable/ic_baseline_zoom_out_24" />
+
+        <com.aureusapps.android.transformlayout.example.UncheckableButton
             android:id="@+id/reset_transform_button"
             style="@style/Widget.App.Button.OutlinedButton.IconOnly"
             android:layout_width="wrap_content"
@@ -48,12 +56,20 @@
             app:icon="@drawable/ic_baseline_fullscreen_24" />
 
         <com.aureusapps.android.transformlayout.example.UncheckableButton
-            android:id="@+id/scale_down_button"
+            android:id="@+id/rotate_left_button"
             style="@style/Widget.App.Button.OutlinedButton.IconOnly"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:backgroundTint="@android:color/white"
-            app:icon="@drawable/ic_baseline_zoom_out_24" />
+            app:icon="@drawable/ic_baseline_rotate_left_24" />
+
+        <com.aureusapps.android.transformlayout.example.UncheckableButton
+            android:id="@+id/rotate_right_button"
+            style="@style/Widget.App.Button.OutlinedButton.IconOnly"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:backgroundTint="@android:color/white"
+            app:icon="@drawable/ic_baseline_rotate_right_24" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/draw_button"

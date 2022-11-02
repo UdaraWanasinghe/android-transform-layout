@@ -15,6 +15,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var scaleDownButton: MaterialButton
     private lateinit var resetTransformButton: MaterialButton
     private lateinit var drawButton: MaterialButton
+    private lateinit var rotateLeftButton: MaterialButton
+    private lateinit var rotateRightButton: MaterialButton
     private lateinit var logTextView: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -25,6 +27,8 @@ class MainActivity : AppCompatActivity() {
         scaleUpButton = findViewById(R.id.scale_up_button)
         scaleDownButton = findViewById(R.id.scale_down_button)
         resetTransformButton = findViewById(R.id.reset_transform_button)
+        rotateLeftButton = findViewById(R.id.rotate_left_button)
+        rotateRightButton = findViewById(R.id.rotate_right_button)
         drawButton = findViewById(R.id.draw_button)
         logTextView = findViewById(R.id.log_text_view)
 
@@ -57,6 +61,12 @@ class MainActivity : AppCompatActivity() {
         }
         resetTransformButton.setOnClickListener {
             transformLayout.gestureDetector.resetTransform()
+        }
+        rotateLeftButton.setOnClickListener {
+            transformLayout.gestureDetector.concatTransform(rotation = -15f)
+        }
+        rotateRightButton.setOnClickListener {
+            transformLayout.gestureDetector.concatTransform(rotation = 15f)
         }
         drawButton.isChecked = !transformLayout.isTransformEnabled
         drawButton.addOnCheckedChangeListener { _, isChecked ->
