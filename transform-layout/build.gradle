@@ -3,6 +3,12 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
+ext {
+    PUBLISH_GROUP_ID = 'com.aureusapps.android'
+    PUBLISH_VERSION = version_name
+    PUBLISH_ARTIFACT_ID = 'transform-layout'
+}
+
 android {
     namespace 'com.aureusapps.android.transformlayout'
     compileSdk 33
@@ -43,3 +49,5 @@ dependencies {
     androidTestImplementation libs.espresso.core
 
 }
+
+apply from: "${rootProject.projectDir}/scripts/publish-module.gradle"

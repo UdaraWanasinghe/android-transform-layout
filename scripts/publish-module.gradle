@@ -1,0 +1,68 @@
+apply plugin: 'maven-publish'
+apply plugin: 'signing'
+
+task androidSourcesJar(type: Jar) {
+    archiveClassifier.set('sources')
+    from android.sourceSets.main.java.srcDirs
+    from android.sourceSets.main.kotlin.srcDirs
+}
+
+artifacts {
+    archives androidSourcesJar
+}
+
+group = PUBLISH_GROUP_ID
+version = PUBLISH_VERSION
+
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                // standard metadata
+                groupId PUBLISH_GROUP_ID
+                artifactId PUBLISH_ARTIFACT_ID
+                version PUBLISH_VERSION
+
+                // publication component defined by the android library plugin
+                from components.release
+
+                // custom artifacts
+                artifact androidSourcesJar
+
+                // pom file
+                pom {
+                    name = PUBLISH_ARTIFACT_ID
+                    description = 'An Android layout that supports simultaneous handling of scaling, rotation, translation and fling gestures.'
+                    url = 'https://github.com/UdaraWanasinghe/android-transform-layout'
+                    licenses {
+                        license {
+                            name = 'MIT License'
+                            url = 'https://github.com/UdaraWanasinghe/android-transform-layout/blob/main/LICENSE'
+                        }
+                    }
+                    developers {
+                        developer {
+                            id = 'UdaraWanasinghe'
+                            name = 'Udara Wanasinghe'
+                            email = 'udara.developer@gmail.com'
+                        }
+                    }
+                    scm {
+                        connection = 'scm:git:github.com/UdaraWanasinghe/android-transform-layout.git'
+                        developerConnection = 'scm:git:ssh://github.com/UdaraWanasinghe/android-transform-layout.git'
+                        url = 'https://github.com/UdaraWanasinghe/android-transform-layout'
+                    }
+                }
+            }
+        }
+    }
+}
+
+signing {
+    useInMemoryPgpKeys(
+            rootProject.ext["signing.keyId"],
+            rootProject.ext["signing.key"],
+            rootProject.ext["signing.password"],
+    )
+    sign publishing.publications
+}
