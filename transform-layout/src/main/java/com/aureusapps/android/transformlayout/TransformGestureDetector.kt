@@ -11,8 +11,7 @@ import kotlin.math.abs
 import kotlin.math.atan2
 
 class TransformGestureDetector(
-    context: Context,
-    private val gestureDetectorListener: TransformGestureDetectorListener
+    context: Context, private val gestureDetectorListener: TransformGestureDetectorListener
 ) {
 
     companion object {
@@ -28,6 +27,8 @@ class TransformGestureDetector(
     private val _drawMatrix = DrawMatrix()
     val drawMatrix: Matrix get() = _drawMatrix.matrix
     val touchMatrix: Matrix get() = _drawMatrix.inverse
+    val pivotX get() = previousFocusX
+    val pivotY get() = previousFocusY
 
     private val touchSlopSquare: Int
     private var downFocusX: Float = 0f
@@ -48,16 +49,16 @@ class TransformGestureDetector(
         touchSlopSquare = touchSlop * touchSlop
     }
 
+    /**
+     * Update scaling, rotation and translation values.
+     *
+     * @param scaling Scaling value around the given pivot point or the previous pivot point.
+     * @param rotation Rotation value around the given pivot point or the previous pivot point.
+     * @param translation Translation value to set.
+     * @param pivot Point to scale and rotate around.
+     * @param inform Whether to inform listeners about the update.
+     */
     @Suppress("unused")
-            /**
-             * Update scaling, rotation and translation values.
-             *
-             * @param scaling Scaling value around the given pivot point or the previous pivot point.
-             * @param rotation Rotation value around the given pivot point or the previous pivot point.
-             * @param translation Translation value to set.
-             * @param pivot Point to scale and rotate around.
-             * @param inform Whether to inform listeners about the update.
-             */
     fun setTransform(
         scaling: Float? = null,
         rotation: Float? = null,
@@ -68,7 +69,6 @@ class TransformGestureDetector(
         if (rotation == null && scaling == null && translation == null) return
         cancelAnims()
         _drawMatrix.mutate { mutableMatrix ->
-            mutableMatrix.copy(_drawMatrix)
             if (pivot != null) {
                 previousFocusX = pivot.first
                 previousFocusY = pivot.second
@@ -88,13 +88,13 @@ class TransformGestureDetector(
         }
     }
 
+    /**
+     * Copy the given transform matrix to the draw matrix.
+     *
+     * @param matrix Transform matrix to copy.
+     * @param inform Whether to inform listeners about the update.
+     */
     @Suppress("unused")
-            /**
-             * Copy the given transform matrix to the draw matrix.
-             *
-             * @param matrix Transform matrix to copy.
-             * @param inform Whether to inform listeners about the update.
-             */
     fun setTransform(matrix: Matrix, inform: Boolean = true) {
         if (_drawMatrix.matrix == matrix) return
         cancelAnims()
@@ -106,13 +106,51 @@ class TransformGestureDetector(
         }
     }
 
+    /**
+     * Concat scaling, rotation and translation values to the current transform matrix.
+     *
+     * @param scaling Scaling value to concat.
+     * @param rotation Rotation value to concat.
+     * @param translation Translation value to concat.
+     * @param pivot Point to scale and rotate around. If not given, the previous pivot point will be used.
+     */
     @Suppress("unused")
-            /**
-             * Concatenate the given transform matrix to the current draw matrix.
-             *
-             * @param matrix Transform matrix to concatenate.
-             * @param inform Whether to inform listeners about the update.
-             */
+    fun concatTransform(
+        scaling: Float? = null,
+        rotation: Float? = null,
+        translation: Pair<Float, Float>? = null,
+        pivot: Pair<Float, Float>? = null,
+        inform: Boolean = true
+    ) {
+        if (rotation == null && scaling == null && translation == null) return
+        cancelAnims()
+        _drawMatrix.mutate { mutableMatrix ->
+            if (pivot != null) {
+                previousFocusX = pivot.first
+                previousFocusY = pivot.second
+            }
+            if (scaling != null) {
+                mutableMatrix.postScale(scaling, previousFocusX, previousFocusY)
+            }
+            if (rotation != null) {
+                mutableMatrix.postRotate(rotation, previousFocusX, previousFocusY)
+            }
+            if (translation != null) {
+                mutableMatrix.postTranslate(translation.first, translation.second)
+            }
+        }
+        if (inform) {
+            informTransformUpdated()
+        }
+    }
+
+    /**
+     * Concatenate the given transform matrix to the current draw matrix.
+     *
+     * @param matrix Transform matrix to concatenate.
+     * @param inform Whether to inform listeners about the update.
+     */
+    @Suppress("unused")
     fun concatTransform(matrix: Matrix, inform: Boolean = true) {
         cancelAnims()
         _drawMatrix.mutate { mutableMatrix ->
@@ -123,12 +161,12 @@ class TransformGestureDetector(
         }
     }
 
+    /**
+     * Reset transformation matrix to an identity matrix.
+     *
+     * @param inform Whether to inform listeners about the update.
+     */
     @Suppress("unused")
-            /**
-             * Reset transformation matrix to an identity matrix.
-             *
-             * @param inform Whether to inform listeners about the update.
-             */
     fun resetTransform(inform: Boolean = true) {
         if (_drawMatrix.matrix.isIdentity) return
         cancelAnims()
@@ -345,8 +383,7 @@ class TransformGestureDetector(
     }
 
     private fun MotionEvent.touchSpan(
-        currentFocusX: Float,
-        currentFocusY: Float
+        currentFocusX: Float, currentFocusY: Float
     ): Float {
         // touch span is the average distance between all active pointers and the current focus point
         // distance can be calculated using the Pythagoras theorem: z = sqrt(x^2 + y^2)
@@ -374,8 +411,7 @@ class TransformGestureDetector(
      * Returns rotation around the focus point in degrees compared to previous pointer positions.
      */
     private fun MotionEvent.rotation(
-        currentFocusX: Float,
-        currentFocusY: Float
+        currentFocusX: Float, currentFocusY: Float
     ): Float {
         var rotationSum = 0f
         var weightSum = 0f
@@ -456,11 +492,6 @@ class TransformGestureDetector(
         }
 
         inner class MutableDrawMatrix {
-
-            fun copy(m: DrawMatrix) {
-                matrix.set(m.matrix)
-                matrixChanged = true
-            }
 
             fun copy(m: Matrix) {
                 matrix.set(m)

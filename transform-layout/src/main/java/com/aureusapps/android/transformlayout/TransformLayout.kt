@@ -23,30 +23,30 @@ class TransformLayout @JvmOverloads constructor(
 
     @Suppress("MemberVisibilityCanBePrivate")
     var isScaleEnabled
-        get() = transformGestureDetector.isScaleEnabled
+        get() = gestureDetector.isScaleEnabled
         set(value) {
-            transformGestureDetector.isScaleEnabled = value
+            gestureDetector.isScaleEnabled = value
         }
 
     @Suppress("MemberVisibilityCanBePrivate")
     var isRotationEnabled
-        get() = transformGestureDetector.isRotateEnabled
+        get() = gestureDetector.isRotateEnabled
         set(value) {
-            transformGestureDetector.isRotateEnabled = value
+            gestureDetector.isRotateEnabled = value
         }
 
     @Suppress("MemberVisibilityCanBePrivate")
     var isTranslationEnabled
-        get() = transformGestureDetector.isTranslateEnabled
+        get() = gestureDetector.isTranslateEnabled
         set(value) {
-            transformGestureDetector.isTranslateEnabled = value
+            gestureDetector.isTranslateEnabled = value
         }
 
     @Suppress("MemberVisibilityCanBePrivate")
     var isFlingEnabled
-        get() = transformGestureDetector.isFlingEnabled
+        get() = gestureDetector.isFlingEnabled
         set(value) {
-            transformGestureDetector.isFlingEnabled = value
+            gestureDetector.isFlingEnabled = value
         }
 
     var isTransformEnabled = false
@@ -73,7 +73,7 @@ class TransformLayout @JvmOverloads constructor(
             gestureDetectorListeners.forEach { it.onSingleTap(px, py) }
         }
     }
-    private val transformGestureDetector = TransformGestureDetector(context, gestureDetectorListener)
+    val gestureDetector = TransformGestureDetector(context, gestureDetectorListener)
 
     init {
         obtainStyledAttributes(attrs, R.styleable.TransformLayout, defStyleAttr, defStyleRes).apply {
@@ -99,7 +99,7 @@ class TransformLayout @JvmOverloads constructor(
         // children didn't consume them.
         if (isTransformEnabled) {
             // Gesture detector will consume events only is transform is enabled.
-            return transformGestureDetector.onTouchEvent(event)
+            return gestureDetector.onTouchEvent(event)
         }
         return false
     }
@@ -108,14 +108,14 @@ class TransformLayout @JvmOverloads constructor(
         // Touch events are dispatched to the child views and the parent view from here.
         if (!isTransformEnabled) {
             // If transform is disabled, we have to transform the events dispatched to children.
-            ev.transform(transformGestureDetector.touchMatrix)
+            ev.transform(gestureDetector.touchMatrix)
         }
         return super.dispatchTouchEvent(ev)
     }
 
     override fun drawChild(canvas: Canvas, child: View, drawingTime: Long): Boolean {
         var result = false
-        canvas.withMatrix(transformGestureDetector.drawMatrix) {
+        canvas.withMatrix(gestureDetector.drawMatrix) {
             result = super.drawChild(canvas, child, drawingTime)
         }
         return result

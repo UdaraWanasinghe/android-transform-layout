@@ -13,7 +13,7 @@
         android:typeface="monospace" />
 
     <com.aureusapps.android.transformlayout.TransformLayout
-        android:id="@+id/zoom_layout"
+        android:id="@+id/transform_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
@@ -32,7 +32,7 @@
         app:layout_constraintRight_toRightOf="parent">
 
         <com.aureusapps.android.transformlayout.example.UncheckableButton
-            android:id="@+id/zoom_in_button"
+            android:id="@+id/scale_up_button"
             style="@style/Widget.App.Button.OutlinedButton.IconOnly"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -40,7 +40,7 @@
             app:icon="@drawable/ic_baseline_zoom_in_24" />
 
         <com.aureusapps.android.transformlayout.example.UncheckableButton
-            android:id="@+id/reset_zoom_button"
+            android:id="@+id/reset_transform_button"
             style="@style/Widget.App.Button.OutlinedButton.IconOnly"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -48,7 +48,7 @@
             app:icon="@drawable/ic_baseline_fullscreen_24" />
 
         <com.aureusapps.android.transformlayout.example.UncheckableButton
-            android:id="@+id/zoom_out_button"
+            android:id="@+id/scale_down_button"
             style="@style/Widget.App.Button.OutlinedButton.IconOnly"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

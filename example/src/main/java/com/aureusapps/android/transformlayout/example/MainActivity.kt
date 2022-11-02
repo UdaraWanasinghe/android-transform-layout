@@ -11,8 +11,9 @@ import com.google.android.material.button.MaterialButton
 class MainActivity : AppCompatActivity() {
 
     private lateinit var transformLayout: TransformLayout
-    private lateinit var zoomInButton: MaterialButton
-    private lateinit var zoomOutButton: MaterialButton
+    private lateinit var scaleUpButton: MaterialButton
+    private lateinit var scaleDownButton: MaterialButton
+    private lateinit var resetTransformButton: MaterialButton
     private lateinit var drawButton: MaterialButton
     private lateinit var logTextView: TextView
 
@@ -20,9 +21,10 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        transformLayout = findViewById(R.id.zoom_layout)
-        zoomInButton = findViewById(R.id.zoom_in_button)
-        zoomOutButton = findViewById(R.id.zoom_out_button)
+        transformLayout = findViewById(R.id.transform_layout)
+        scaleUpButton = findViewById(R.id.scale_up_button)
+        scaleDownButton = findViewById(R.id.scale_down_button)
+        resetTransformButton = findViewById(R.id.reset_transform_button)
         drawButton = findViewById(R.id.draw_button)
         logTextView = findViewById(R.id.log_text_view)
 
@@ -47,9 +49,14 @@ class MainActivity : AppCompatActivity() {
                 logTextView.text = logTextBuilder.toString()
             }
         })
-        zoomInButton.setOnClickListener {
+        scaleUpButton.setOnClickListener {
+            transformLayout.gestureDetector.concatTransform(scaling = 1.2f)
         }
-        zoomOutButton.setOnClickListener {
+        scaleDownButton.setOnClickListener {
+            transformLayout.gestureDetector.concatTransform(scaling = 0.8f)
+        }
+        resetTransformButton.setOnClickListener {
+            transformLayout.gestureDetector.resetTransform()
         }
         drawButton.isChecked = !transformLayout.isTransformEnabled
         drawButton.addOnCheckedChangeListener { _, isChecked ->
