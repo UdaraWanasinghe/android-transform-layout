@@ -46,7 +46,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onTransformUpdate(px: Float, py: Float, oldMatrix: Matrix, newMatrix: Matrix) {
-                if (System.currentTimeMillis() - t > 100) {
+                if (System.currentTimeMillis() - t > 200) {
                     t = System.currentTimeMillis()
                     appendToLogText("Transform updated", newMatrix, px, py)
                 }
