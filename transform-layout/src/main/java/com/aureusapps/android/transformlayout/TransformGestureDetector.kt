@@ -10,9 +10,7 @@ import androidx.dynamicanimation.animation.FloatValueHolder
 import kotlin.math.abs
 import kotlin.math.atan2
 
-class TransformGestureDetector(
-    context: Context, private val gestureDetectorListener: TransformGestureDetectorListener
-) {
+class TransformGestureDetector(context: Context) {
 
     companion object {
         private const val MIN_FLING_VELOCITY = 50f
@@ -42,11 +40,16 @@ class TransformGestureDetector(
     private var flingAnimX: FlingAnimation? = null
     private var flingAnimY: FlingAnimation? = null
     private var flagTransformStarted = false
+    private var gestureDetectorListener: TransformGestureDetectorListener? = null
 
     init {
         val configuration = ViewConfiguration.get(context)
         val touchSlop = configuration.scaledTouchSlop
         touchSlopSquare = touchSlop * touchSlop
+    }
+
+    fun setGestureDetectorListener(listener: TransformGestureDetectorListener?) {
+        gestureDetectorListener = listener
     }
 
     /**
@@ -230,7 +233,7 @@ class TransformGestureDetector(
                     // if transform start not signaled, signal it
                     if (!flagTransformStarted) {
                         flagTransformStarted = true
-                        gestureDetectorListener.onTransformStart(previousFocusX, previousFocusY, _drawMatrix.matrix)
+                        gestureDetectorListener?.onTransformStart(previousFocusX, previousFocusY, _drawMatrix.matrix)
                     }
                     _drawMatrix.mutate { mutableMatrix ->
                         if (isScaleEnabled) {
@@ -289,7 +292,7 @@ class TransformGestureDetector(
                 if (detectSingleTap) {
                     val dt = event.eventTime - event.downTime
                     if (dt < ViewConfiguration.getTapTimeout()) {
-                        gestureDetectorListener.onSingleTap(event.x, event.y)
+                        gestureDetectorListener?.onSingleTap(event.x, event.y)
                         return true
                     }
                 }
@@ -318,7 +321,7 @@ class TransformGestureDetector(
                             }
                             addEndListener { _, _, _, _ ->
                                 if (flagInformComplete) {
-                                    gestureDetectorListener.onTransformComplete(previousFocusX, previousFocusY, _drawMatrix.matrix)
+                                    gestureDetectorListener?.onTransformComplete(previousFocusX, previousFocusY, _drawMatrix.matrix)
                                 } else {
                                     flagInformComplete = true
                                 }
@@ -340,7 +343,7 @@ class TransformGestureDetector(
                             }
                             addEndListener { _, _, _, _ ->
                                 if (flagInformComplete) {
-                                    gestureDetectorListener.onTransformComplete(previousFocusX, previousFocusY, _drawMatrix.matrix)
+                                    gestureDetectorListener?.onTransformComplete(previousFocusX, previousFocusY, _drawMatrix.matrix)
                                 } else {
                                     flagInformComplete = true
                                 }
@@ -350,13 +353,13 @@ class TransformGestureDetector(
                     } else {
                         // fling is enabled, but not enough velocity to start animation
                         if (flagTransformStarted) {
-                            gestureDetectorListener.onTransformComplete(previousFocusX, previousFocusY, _drawMatrix.matrix)
+                            gestureDetectorListener?.onTransformComplete(previousFocusX, previousFocusY, _drawMatrix.matrix)
                         }
                     }
                 } else {
                     // fling is not enabled
                     if (flagTransformStarted) {
-                        gestureDetectorListener.onTransformComplete(previousFocusX, previousFocusY, _drawMatrix.matrix)
+                        gestureDetectorListener?.onTransformComplete(previousFocusX, previousFocusY, _drawMatrix.matrix)
                     }
                 }
             }
@@ -365,7 +368,7 @@ class TransformGestureDetector(
     }
 
     private fun informTransformUpdated() {
-        gestureDetectorListener.onTransformUpdate(previousFocusX, previousFocusY, _drawMatrix.lastMatrix, _drawMatrix.matrix)
+        gestureDetectorListener?.onTransformUpdate(previousFocusX, previousFocusY, _drawMatrix.lastMatrix, _drawMatrix.matrix)
     }
 
     private fun MotionEvent.focusPoint(): Pair<Float, Float> {

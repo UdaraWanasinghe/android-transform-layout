@@ -73,7 +73,9 @@ class TransformLayout @JvmOverloads constructor(
             gestureDetectorListeners.forEach { it.onSingleTap(px, py) }
         }
     }
-    val gestureDetector = TransformGestureDetector(context, gestureDetectorListener)
+    val gestureDetector = TransformGestureDetector(context).apply {
+        setGestureDetectorListener(gestureDetectorListener)
+    }
 
     init {
         obtainStyledAttributes(attrs, R.styleable.TransformLayout, defStyleAttr, defStyleRes).apply {
