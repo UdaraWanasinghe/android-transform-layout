@@ -3,6 +3,9 @@
 An Android layout that supports simultaneous handling of scaling, rotation, translation and fling
 gestures.
 
+## Screen Records
+<img src="https://github.com/UdaraWanasinghe/android-transform-layout/blob/main/resources/screen-records/screen-record.gif?raw=true" width=360>
+
 ## Using
 
 1. Import the library into your project.
