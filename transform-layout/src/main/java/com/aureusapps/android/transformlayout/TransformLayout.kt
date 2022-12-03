@@ -14,7 +14,7 @@ import com.aureusapps.android.extensions.obtainStyledAttributes
 
 @SuppressLint("ClickableViewAccessibility")
 
-class TransformLayout @JvmOverloads constructor(
+open class TransformLayout @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = R.attr.transformLayoutStyle,
