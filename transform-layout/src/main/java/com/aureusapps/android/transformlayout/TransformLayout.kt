@@ -88,6 +88,14 @@ open class TransformLayout @JvmOverloads constructor(
         }
     }
 
+    fun setTransform(matrix: Matrix) {
+        gestureDetector.setTransform(matrix)
+    }
+
+    fun concatTransform(matrix: Matrix) {
+        gestureDetector.concatTransform(matrix)
+    }
+
     override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
         // This will always receive ACTION_DOWN event.
         // If we return true, all the following touch events will be
