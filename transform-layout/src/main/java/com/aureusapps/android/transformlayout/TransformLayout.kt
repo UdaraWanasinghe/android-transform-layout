@@ -88,12 +88,53 @@ open class TransformLayout @JvmOverloads constructor(
         }
     }
 
-    fun setTransform(matrix: Matrix) {
-        gestureDetector.setTransform(matrix)
+    /**
+     * Set the current transform matrix.
+     *
+     * @param matrix The matrix to set.
+     * @param inform Whether to inform gesture detector listeners of the change.
+     */
+    fun setTransform(matrix: Matrix, inform: Boolean = true) {
+        gestureDetector.setTransform(matrix, inform)
     }
 
-    fun concatTransform(matrix: Matrix) {
-        gestureDetector.concatTransform(matrix)
+    /**
+     * Set the current transform matrix values.
+     *
+     * @param values Values to set.
+     * @param inform Whether to inform gesture detector listeners of the change.
+     */
+    fun setTransform(values: FloatArray, inform: Boolean = true) {
+        gestureDetector.setTransform(values, inform)
+    }
+
+    /**
+     * Concatenate the given transform matrix to the current transform matrix.
+     *
+     * @param matrix The matrix to concatenate.
+     * @param inform Whether to inform gesture detector listeners of the change.
+     */
+    fun concatTransform(matrix: Matrix, inform: Boolean = true) {
+        gestureDetector.concatTransform(matrix, inform)
+    }
+
+    /**
+     * Concatenate the given transform matrix values to the current transform matrix.
+     *
+     * @param values Values to concatenate.
+     * @param inform Whether to notify gesture detector listeners of the change.
+     */
+    fun concatTransform(values: FloatArray, inform: Boolean = true) {
+        gestureDetector.concatTransform(values, inform)
+    }
+
+    /**
+     * Reset the current transform matrix to identity.
+     *
+     * @param inform Whether to inform gesture detector listeners of the change.
+     */
+    fun resetTransform(inform: Boolean = true) {
+        gestureDetector.resetTransform(inform)
     }
 
     override fun onInterceptTouchEvent(event: MotionEvent): Boolean {

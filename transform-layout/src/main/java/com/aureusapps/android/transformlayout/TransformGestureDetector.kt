@@ -5,6 +5,7 @@ import android.graphics.Matrix
 import android.view.MotionEvent
 import android.view.VelocityTracker
 import android.view.ViewConfiguration
+import androidx.core.graphics.values
 import androidx.dynamicanimation.animation.FlingAnimation
 import androidx.dynamicanimation.animation.FloatValueHolder
 import kotlin.math.abs
@@ -110,6 +111,23 @@ class TransformGestureDetector(context: Context) {
     }
 
     /**
+     * Copy the given values to draw matrix.
+     *
+     * @param values Values to copy.
+     * @param inform Whether to inform listeners about the update.
+     */
+    fun setTransform(values: FloatArray, inform: Boolean = true) {
+        if (_drawMatrix.matrix.values().contentEquals(values)) return
+        cancelAnims()
+        _drawMatrix.mutate { mutableMatrix ->
+            mutableMatrix.copyValues(values)
+        }
+        if (inform) {
+            informTransformUpdated()
+        }
+    }
+
+    /**
      * Concat scaling, rotation and translation values to the current transform matrix.
      *
      * @param scaling Scaling value to concat around the given pivot point or the previous pivot point.
@@ -117,7 +135,6 @@ class TransformGestureDetector(context: Context) {
      * @param translation Translation value to concat.
      * @param pivot Point to scale and rotate around. If not given, the previous pivot point will be used.
      */
-    @Suppress("unused")
     fun concatTransform(
         scaling: Float? = null,
         rotation: Float? = null,
@@ -153,7 +170,6 @@ class TransformGestureDetector(context: Context) {
      * @param matrix Transform matrix to concatenate.
      * @param inform Whether to inform listeners about the update.
      */
-    @Suppress("unused")
     fun concatTransform(matrix: Matrix, inform: Boolean = true) {
         cancelAnims()
         _drawMatrix.mutate { mutableMatrix ->
@@ -165,11 +181,26 @@ class TransformGestureDetector(context: Context) {
     }
 
     /**
+     * Concatenate the given values to the current transform matrix.
+     *
+     * @param values Values to concatenate.
+     * @param inform Whether to inform listeners about the update.
+     */
+    fun concatTransform(values: FloatArray, inform: Boolean = true) {
+        cancelAnims()
+        _drawMatrix.mutate { mutableMatrix ->
+            mutableMatrix.postConcat(values)
+        }
+        if (inform) {
+            informTransformUpdated()
+        }
+    }
+
+    /**
      * Reset transformation matrix to an identity matrix.
      *
      * @param inform Whether to inform listeners about the update.
      */
-    @Suppress("unused")
     fun resetTransform(inform: Boolean = true) {
         if (_drawMatrix.matrix.isIdentity) return
         cancelAnims()
@@ -486,6 +517,7 @@ class TransformGestureDetector(context: Context) {
                 }
                 return invertedMatrix
             }
+        val isIdentity get() = matrix.isIdentity
         private val invertedMatrix = Matrix()
         private var matrixChanged = false
         private val mutableMatrix = MutableDrawMatrix()
@@ -498,8 +530,15 @@ class TransformGestureDetector(context: Context) {
 
         inner class MutableDrawMatrix {
 
+            private val tempMatrix = Matrix()
+
             fun copy(m: Matrix) {
                 matrix.set(m)
+                matrixChanged = true
+            }
+
+            fun copyValues(values: FloatArray) {
+                matrix.setValues(values)
                 matrixChanged = true
             }
 
@@ -535,6 +574,12 @@ class TransformGestureDetector(context: Context) {
 
             fun postConcat(m: Matrix) {
                 matrix.postConcat(m)
+                matrixChanged = true
+            }
+
+            fun postConcat(values: FloatArray) {
+                tempMatrix.setValues(values)
+                matrix.postConcat(tempMatrix)
                 matrixChanged = true
             }
 
