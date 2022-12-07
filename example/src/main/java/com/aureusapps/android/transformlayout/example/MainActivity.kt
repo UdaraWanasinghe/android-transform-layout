@@ -78,19 +78,19 @@ class MainActivity : AppCompatActivity() {
 
         })
         scaleUpButton.setOnClickListener {
-            transformLayout.gestureDetector.concatTransform(scaling = 1.2f)
+            transformLayout.concatTransform(scaling = 1.2f)
         }
         scaleDownButton.setOnClickListener {
-            transformLayout.gestureDetector.concatTransform(scaling = 0.8f)
+            transformLayout.concatTransform(scaling = 0.8f)
         }
         resetTransformButton.setOnClickListener {
-            transformLayout.gestureDetector.resetTransform()
+            transformLayout.resetTransform()
         }
         rotateLeftButton.setOnClickListener {
-            transformLayout.gestureDetector.concatTransform(rotation = -15f)
+            transformLayout.concatTransform(rotation = -15f)
         }
         rotateRightButton.setOnClickListener {
-            transformLayout.gestureDetector.concatTransform(rotation = 15f)
+            transformLayout.concatTransform(rotation = 15f)
         }
         drawButton.isChecked = !transformLayout.isTransformEnabled
         drawButton.addOnCheckedChangeListener { _, isChecked ->

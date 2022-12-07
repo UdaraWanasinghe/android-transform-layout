@@ -21,33 +21,32 @@ open class TransformLayout @JvmOverloads constructor(
     defStyleRes: Int = R.style.TransformLayoutStyle
 ) : FrameLayout(context, attrs, defStyleAttr, defStyleRes), Transformable {
 
-    @Suppress("MemberVisibilityCanBePrivate")
-    var isScaleEnabled
+    override var isScaleEnabled
         get() = gestureDetector.isScaleEnabled
         set(value) {
             gestureDetector.isScaleEnabled = value
         }
 
-    @Suppress("MemberVisibilityCanBePrivate")
-    var isRotationEnabled
+    override var isRotateEnabled
         get() = gestureDetector.isRotateEnabled
         set(value) {
             gestureDetector.isRotateEnabled = value
         }
 
-    @Suppress("MemberVisibilityCanBePrivate")
-    var isTranslationEnabled
+    override var isTranslateEnabled
         get() = gestureDetector.isTranslateEnabled
         set(value) {
             gestureDetector.isTranslateEnabled = value
         }
 
-    @Suppress("MemberVisibilityCanBePrivate")
-    var isFlingEnabled
+    override var isFlingEnabled
         get() = gestureDetector.isFlingEnabled
         set(value) {
             gestureDetector.isFlingEnabled = value
         }
+
+    override val pivotPoint: Pair<Float, Float>
+        get() = gestureDetector.pivotPoint
 
     var isTransformEnabled = false
 
@@ -73,15 +72,19 @@ open class TransformLayout @JvmOverloads constructor(
             gestureDetectorListeners.forEach { it.onSingleTap(px, py) }
         }
     }
-    val gestureDetector = TransformGestureDetector(context).apply {
+    private val gestureDetector = TransformGestureDetector(context).apply {
         setGestureDetectorListener(gestureDetectorListener)
     }
+
+    override val transformMatrix: Matrix get() = gestureDetector.transformMatrix
+
+    override val inverseTransformMatrix: Matrix get() = gestureDetector.inverseTransformMatrix
 
     init {
         obtainStyledAttributes(attrs, R.styleable.TransformLayout, defStyleAttr, defStyleRes).apply {
             isScaleEnabled = getBoolean(R.styleable.TransformLayout_scaleEnabled, true)
-            isRotationEnabled = getBoolean(R.styleable.TransformLayout_rotationEnabled, true)
-            isTranslationEnabled = getBoolean(R.styleable.TransformLayout_translationEnabled, true)
+            isRotateEnabled = getBoolean(R.styleable.TransformLayout_rotationEnabled, true)
+            isTranslateEnabled = getBoolean(R.styleable.TransformLayout_translationEnabled, true)
             isFlingEnabled = getBoolean(R.styleable.TransformLayout_flingEnabled, true)
             isTransformEnabled = getBoolean(R.styleable.TransformLayout_transformEnabled, true)
             recycle()
@@ -150,14 +153,18 @@ open class TransformLayout @JvmOverloads constructor(
         // Touch events are dispatched to the child views and the parent view from here.
         if (!isTransformEnabled) {
             // If transform is disabled, we have to transform the events dispatched to children.
-            ev.transform(gestureDetector.touchMatrix)
+            ev.transform(gestureDetector.inverseTransformMatrix)
         }
         return super.dispatchTouchEvent(ev)
     }
 
-    override fun drawChild(canvas: Canvas, child: View, drawingTime: Long): Boolean {
+    override fun drawChild(
+        canvas: Canvas,
+        child: View,
+        drawingTime: Long
+    ): Boolean {
         var result = false
-        canvas.withMatrix(gestureDetector.drawMatrix) {
+        canvas.withMatrix(gestureDetector.transformMatrix) {
             result = super.drawChild(canvas, child, drawingTime)
         }
         return result

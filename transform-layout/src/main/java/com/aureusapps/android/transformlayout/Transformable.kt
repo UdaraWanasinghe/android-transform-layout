@@ -3,6 +3,21 @@ package com.aureusapps.android.transformlayout
 import android.graphics.Matrix
 
 interface Transformable {
+
+    val transformMatrix: Matrix
+
+    val inverseTransformMatrix: Matrix
+
+    val pivotPoint: Pair<Float, Float>
+
+    val isTranslateEnabled: Boolean
+
+    val isScaleEnabled: Boolean
+
+    val isRotateEnabled: Boolean
+
+    val isFlingEnabled: Boolean
+
     /**
      * Copy the given matrix to the transformation matrix.
      *

@@ -18,16 +18,18 @@ class TransformGestureDetector(context: Context) : Transformable {
         private const val MAX_FLING_VELOCITY = 8000f
     }
 
-    var isScaleEnabled = true
-    var isRotateEnabled = true
-    var isTranslateEnabled = true
-    var isFlingEnabled = true
+    override var isTranslateEnabled = true
+    override var isScaleEnabled = true
+    override var isRotateEnabled = true
+    override var isFlingEnabled = true
 
-    private val _drawMatrix = DrawMatrix()
-    val drawMatrix: Matrix get() = _drawMatrix.matrix
-    val touchMatrix: Matrix get() = _drawMatrix.inverse
-    val pivotX get() = previousFocusX
-    val pivotY get() = previousFocusY
+    private val _transformMatrix = TransformMatrix()
+    override val transformMatrix: Matrix
+        get() = _transformMatrix.matrix
+    override val inverseTransformMatrix: Matrix
+        get() = _transformMatrix.inverse
+    override val pivotPoint: Pair<Float, Float>
+        get() = previousFocusX to previousFocusY
 
     private val touchSlopSquare: Int
     private var downFocusX: Float = 0f
@@ -62,7 +64,7 @@ class TransformGestureDetector(context: Context) : Transformable {
     ): Boolean {
         if (rotation == null && scaling == null && translation == null) return false
         cancelAnims()
-        _drawMatrix.mutate { mutableMatrix ->
+        _transformMatrix.mutate { mutableMatrix ->
             if (pivot != null) {
                 previousFocusX = pivot.first
                 previousFocusY = pivot.second
@@ -84,9 +86,9 @@ class TransformGestureDetector(context: Context) : Transformable {
     }
 
     override fun setTransform(matrix: Matrix, notify: Boolean): Boolean {
-        if (_drawMatrix.matrix == matrix) return false
+        if (_transformMatrix.matrix == matrix) return false
         cancelAnims()
-        _drawMatrix.mutate { mutableMatrix ->
+        _transformMatrix.mutate { mutableMatrix ->
             mutableMatrix.copy(matrix)
         }
         if (notify) {
@@ -96,9 +98,9 @@ class TransformGestureDetector(context: Context) : Transformable {
     }
 
     override fun setTransform(values: FloatArray, notify: Boolean): Boolean {
-        if (_drawMatrix.matrix.values().contentEquals(values)) return false
+        if (_transformMatrix.matrix.values().contentEquals(values)) return false
         cancelAnims()
-        _drawMatrix.mutate { mutableMatrix ->
+        _transformMatrix.mutate { mutableMatrix ->
             mutableMatrix.copyValues(values)
         }
         if (notify) {
@@ -116,7 +118,7 @@ class TransformGestureDetector(context: Context) : Transformable {
     ) {
         if (rotation == null && scaling == null && translation == null) return
         cancelAnims()
-        _drawMatrix.mutate { mutableMatrix ->
+        _transformMatrix.mutate { mutableMatrix ->
             if (pivot != null) {
                 previousFocusX = pivot.first
                 previousFocusY = pivot.second
@@ -138,7 +140,7 @@ class TransformGestureDetector(context: Context) : Transformable {
 
     override fun concatTransform(matrix: Matrix, notify: Boolean) {
         cancelAnims()
-        _drawMatrix.mutate { mutableMatrix ->
+        _transformMatrix.mutate { mutableMatrix ->
             mutableMatrix.postConcat(matrix)
         }
         if (notify) {
@@ -148,7 +150,7 @@ class TransformGestureDetector(context: Context) : Transformable {
 
     override fun concatTransform(values: FloatArray, notify: Boolean) {
         cancelAnims()
-        _drawMatrix.mutate { mutableMatrix ->
+        _transformMatrix.mutate { mutableMatrix ->
             mutableMatrix.postConcat(values)
         }
         if (notify) {
@@ -157,9 +159,9 @@ class TransformGestureDetector(context: Context) : Transformable {
     }
 
     override fun resetTransform(notify: Boolean): Boolean {
-        if (_drawMatrix.isIdentity) return false
+        if (_transformMatrix.isIdentity) return false
         cancelAnims()
-        _drawMatrix.mutate { mutableMatrix ->
+        _transformMatrix.mutate { mutableMatrix ->
             mutableMatrix.reset()
         }
         if (notify) {
@@ -220,9 +222,9 @@ class TransformGestureDetector(context: Context) : Transformable {
                     // if transform start not signaled, signal it
                     if (!flagTransformStarted) {
                         flagTransformStarted = true
-                        gestureDetectorListener?.onTransformStart(previousFocusX, previousFocusY, _drawMatrix.matrix)
+                        gestureDetectorListener?.onTransformStart(previousFocusX, previousFocusY, _transformMatrix.matrix)
                     }
-                    _drawMatrix.mutate { mutableMatrix ->
+                    _transformMatrix.mutate { mutableMatrix ->
                         if (isScaleEnabled) {
                             val scaling = touchSpan / previousTouchSpan
                             mutableMatrix.postScale(scaling, focusX, focusY)
@@ -298,7 +300,7 @@ class TransformGestureDetector(context: Context) : Transformable {
                             setStartVelocity(velocityX)
                             setStartValue(0f)
                             var lastValue = 0f
-                            _drawMatrix.mutate { mutableMatrix ->
+                            _transformMatrix.mutate { mutableMatrix ->
                                 addUpdateListener { _, value, _ ->
                                     val ds = value - lastValue
                                     lastValue = value
@@ -308,7 +310,7 @@ class TransformGestureDetector(context: Context) : Transformable {
                             }
                             addEndListener { _, _, _, _ ->
                                 if (flagInformComplete) {
-                                    gestureDetectorListener?.onTransformComplete(previousFocusX, previousFocusY, _drawMatrix.matrix)
+                                    gestureDetectorListener?.onTransformComplete(previousFocusX, previousFocusY, _transformMatrix.matrix)
                                 } else {
                                     flagInformComplete = true
                                 }
@@ -320,7 +322,7 @@ class TransformGestureDetector(context: Context) : Transformable {
                             setStartVelocity(velocityY)
                             setStartValue(0f)
                             var lastValue = 0f
-                            _drawMatrix.mutate { mutableMatrix ->
+                            _transformMatrix.mutate { mutableMatrix ->
                                 addUpdateListener { _, value, _ ->
                                     val ds = value - lastValue
                                     lastValue = value
@@ -330,7 +332,7 @@ class TransformGestureDetector(context: Context) : Transformable {
                             }
                             addEndListener { _, _, _, _ ->
                                 if (flagInformComplete) {
-                                    gestureDetectorListener?.onTransformComplete(previousFocusX, previousFocusY, _drawMatrix.matrix)
+                                    gestureDetectorListener?.onTransformComplete(previousFocusX, previousFocusY, _transformMatrix.matrix)
                                 } else {
                                     flagInformComplete = true
                                 }
@@ -340,13 +342,13 @@ class TransformGestureDetector(context: Context) : Transformable {
                     } else {
                         // fling is enabled, but not enough velocity to start animation
                         if (flagTransformStarted) {
-                            gestureDetectorListener?.onTransformComplete(previousFocusX, previousFocusY, _drawMatrix.matrix)
+                            gestureDetectorListener?.onTransformComplete(previousFocusX, previousFocusY, _transformMatrix.matrix)
                         }
                     }
                 } else {
                     // fling is not enabled
                     if (flagTransformStarted) {
-                        gestureDetectorListener?.onTransformComplete(previousFocusX, previousFocusY, _drawMatrix.matrix)
+                        gestureDetectorListener?.onTransformComplete(previousFocusX, previousFocusY, _transformMatrix.matrix)
                     }
                 }
             }
@@ -355,7 +357,7 @@ class TransformGestureDetector(context: Context) : Transformable {
     }
 
     private fun informTransformUpdated() {
-        gestureDetectorListener?.onTransformUpdate(previousFocusX, previousFocusY, _drawMatrix.lastMatrix, _drawMatrix.matrix)
+        gestureDetectorListener?.onTransformUpdate(previousFocusX, previousFocusY, _transformMatrix.lastMatrix, _transformMatrix.matrix)
     }
 
     private fun MotionEvent.focusPoint(): Pair<Float, Float> {
@@ -463,7 +465,7 @@ class TransformGestureDetector(context: Context) : Transformable {
         velocityTracker?.recycle()
     }
 
-    private class DrawMatrix {
+    private class TransformMatrix {
         val matrix = Matrix()
         val lastMatrix = Matrix()
         val inverse: Matrix
@@ -476,15 +478,15 @@ class TransformGestureDetector(context: Context) : Transformable {
         val isIdentity get() = matrix.isIdentity
         private val invertedMatrix = Matrix()
         private var matrixChanged = false
-        private val mutableMatrix = MutableDrawMatrix()
+        private val mutableMatrix = MutableTransformMatrix()
 
-        fun mutate(block: (MutableDrawMatrix) -> Unit) {
+        fun mutate(block: (MutableTransformMatrix) -> Unit) {
             lastMatrix.set(matrix)
             block(mutableMatrix)
             matrixChanged = true
         }
 
-        inner class MutableDrawMatrix {
+        inner class MutableTransformMatrix {
 
             private val tempMatrix = Matrix()
 
