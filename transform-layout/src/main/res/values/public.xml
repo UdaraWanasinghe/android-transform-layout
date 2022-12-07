@@ -2,8 +2,8 @@
 <resources>
     <public name="transformEnabled" type="attr" />
     <public name="scaleEnabled" type="attr" />
-    <public name="rotationEnabled" type="attr" />
-    <public name="translationEnabled" type="attr" />
+    <public name="rotateEnabled" type="attr" />
+    <public name="translateEnabled" type="attr" />
     <public name="flingEnabled" type="attr" />
     <public name="transformLayoutStyle" type="attr" />
 </resources>

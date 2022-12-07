@@ -83,8 +83,8 @@ open class TransformLayout @JvmOverloads constructor(
     init {
         obtainStyledAttributes(attrs, R.styleable.TransformLayout, defStyleAttr, defStyleRes).apply {
             isScaleEnabled = getBoolean(R.styleable.TransformLayout_scaleEnabled, true)
-            isRotateEnabled = getBoolean(R.styleable.TransformLayout_rotationEnabled, true)
-            isTranslateEnabled = getBoolean(R.styleable.TransformLayout_translationEnabled, true)
+            isRotateEnabled = getBoolean(R.styleable.TransformLayout_rotateEnabled, true)
+            isTranslateEnabled = getBoolean(R.styleable.TransformLayout_translateEnabled, true)
             isFlingEnabled = getBoolean(R.styleable.TransformLayout_flingEnabled, true)
             isTransformEnabled = getBoolean(R.styleable.TransformLayout_transformEnabled, true)
             recycle()

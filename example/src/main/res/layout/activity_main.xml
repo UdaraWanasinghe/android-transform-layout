@@ -16,7 +16,12 @@
     <com.aureusapps.android.transformlayout.TransformLayout
         android:id="@+id/transform_layout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        app:flingEnabled="true"
+        app:rotateEnabled="true"
+        app:scaleEnabled="true"
+        app:transformEnabled="true"
+        app:translateEnabled="true">
 
         <com.aureusapps.android.transformlayout.example.PainterLayout
             android:layout_width="match_parent"

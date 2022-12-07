@@ -3,7 +3,8 @@
 An Android layout that supports simultaneous handling of scaling, rotation, translation and fling
 gestures.
 
-## Screen Records
+## Preview
+
 <img src="https://github.com/UdaraWanasinghe/android-transform-layout/blob/main/resources/screen-records/screen-record.gif?raw=true" width=360>
 
 ## Using
@@ -19,12 +20,19 @@ dependencies {
 2. You can use the `TransformLayout` in your layout XML.
 
 ```xml
-
-<com.aureusapps.android.transformlayout.TransformLayout android:id="@+id/transform_layout"
-    android:layout_width="match_parent" android:layout_height="match_parent">
+<com.aureusapps.android.transformlayout.TransformLayout
+    android:id="@+id/transform_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:flingEnabled="true"
+    app:rotateEnabled="true"
+    app:scaleEnabled="true"
+    app:transformEnabled="true"
+    app:translateEnabled="true">
 
     <com.aureusapps.android.transformlayout.example.PainterLayout
-        android:layout_width="match_parent" android:layout_height="match_parent" />
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 
 </com.aureusapps.android.transformlayout.TransformLayout>
 ```
@@ -38,7 +46,7 @@ class CustomView @JvmOverloads constructor(
 ) : FrameLayout(context, attrs) {
 
     var isTransformEnabled = false
-    val gestureDetector = TransformGestureDetector(context, gestureDetectorListener)
+    val gestureDetector = TransformGestureDetector(context)
 
     private val gestureDetectorListener = object : TransformGestureDetectorListener {
         override fun onTransformStart(px: Float, py: Float, matrix: Matrix) {
@@ -55,6 +63,10 @@ class CustomView @JvmOverloads constructor(
         }
     }
 
+    init {
+        gestureDetector.setGestureDetectorListener(gestureDetectorListener)
+    }
+
     override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
         return isTransformEnabled
     }
@@ -68,14 +80,14 @@ class CustomView @JvmOverloads constructor(
 
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
         if (!isTransformEnabled) {
-            ev.transform(gestureDetector.touchMatrix)
+            ev.transform(gestureDetector.inverseTransformMatrix)
         }
         return super.dispatchTouchEvent(ev)
     }
 
     override fun drawChild(canvas: Canvas, child: View, drawingTime: Long): Boolean {
         var result = false
-        canvas.withMatrix(gestureDetector.drawMatrix) {
+        canvas.withMatrix(gestureDetector.transformMatrix) {
             result = super.drawChild(canvas, child, drawingTime)
         }
         return result
@@ -91,8 +103,8 @@ class CustomView @JvmOverloads constructor(
 <style name="TransformLayoutStyle">
     <item name="transformEnabled">true</item>
     <item name="scaleEnabled">true</item>
-    <item name="rotationEnabled">true</item>
-    <item name="translationEnabled">true</item>
+    <item name="rotateEnabled">true</item>
+    <item name="translateEnabled">true</item>
     <item name="flingEnabled">true</item>
 </style>
 ```

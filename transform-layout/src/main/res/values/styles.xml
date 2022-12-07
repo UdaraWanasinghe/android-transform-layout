@@ -4,8 +4,8 @@
     <style name="TransformLayoutStyle">
         <item name="transformEnabled">true</item>
         <item name="scaleEnabled">true</item>
-        <item name="rotationEnabled">true</item>
-        <item name="translationEnabled">true</item>
+        <item name="rotateEnabled">true</item>
+        <item name="translateEnabled">true</item>
         <item name="flingEnabled">true</item>
     </style>
 
