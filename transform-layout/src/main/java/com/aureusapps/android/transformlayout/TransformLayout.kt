@@ -19,7 +19,7 @@ open class TransformLayout @JvmOverloads constructor(
     attrs: AttributeSet? = null,
     defStyleAttr: Int = R.attr.transformLayoutStyle,
     defStyleRes: Int = R.style.TransformLayoutStyle
-) : FrameLayout(context, attrs, defStyleAttr, defStyleRes) {
+) : FrameLayout(context, attrs, defStyleAttr, defStyleRes), Transformable {
 
     @Suppress("MemberVisibilityCanBePrivate")
     var isScaleEnabled
@@ -88,53 +88,44 @@ open class TransformLayout @JvmOverloads constructor(
         }
     }
 
-    /**
-     * Set the current transform matrix.
-     *
-     * @param matrix The matrix to set.
-     * @param inform Whether to inform gesture detector listeners of the change.
-     */
-    fun setTransform(matrix: Matrix, inform: Boolean = true) {
-        gestureDetector.setTransform(matrix, inform)
+    override fun setTransform(matrix: Matrix, notify: Boolean): Boolean {
+        return gestureDetector.setTransform(matrix, notify)
     }
 
-    /**
-     * Set the current transform matrix values.
-     *
-     * @param values Values to set.
-     * @param inform Whether to inform gesture detector listeners of the change.
-     */
-    fun setTransform(values: FloatArray, inform: Boolean = true) {
-        gestureDetector.setTransform(values, inform)
+    override fun setTransform(values: FloatArray, notify: Boolean): Boolean {
+        return gestureDetector.setTransform(values, notify)
     }
 
-    /**
-     * Concatenate the given transform matrix to the current transform matrix.
-     *
-     * @param matrix The matrix to concatenate.
-     * @param inform Whether to inform gesture detector listeners of the change.
-     */
-    fun concatTransform(matrix: Matrix, inform: Boolean = true) {
-        gestureDetector.concatTransform(matrix, inform)
+    override fun setTransform(
+        scaling: Float?,
+        rotation: Float?,
+        translation: Pair<Float, Float>?,
+        pivot: Pair<Float, Float>?,
+        notify: Boolean
+    ): Boolean {
+        return gestureDetector.setTransform(scaling, rotation, translation, pivot, notify)
     }
 
-    /**
-     * Concatenate the given transform matrix values to the current transform matrix.
-     *
-     * @param values Values to concatenate.
-     * @param inform Whether to notify gesture detector listeners of the change.
-     */
-    fun concatTransform(values: FloatArray, inform: Boolean = true) {
-        gestureDetector.concatTransform(values, inform)
+    override fun concatTransform(matrix: Matrix, notify: Boolean) {
+        gestureDetector.concatTransform(matrix, notify)
     }
 
-    /**
-     * Reset the current transform matrix to identity.
-     *
-     * @param inform Whether to inform gesture detector listeners of the change.
-     */
-    fun resetTransform(inform: Boolean = true) {
-        gestureDetector.resetTransform(inform)
+    override fun concatTransform(values: FloatArray, notify: Boolean) {
+        gestureDetector.concatTransform(values, notify)
+    }
+
+    override fun concatTransform(
+        scaling: Float?,
+        rotation: Float?,
+        translation: Pair<Float, Float>?,
+        pivot: Pair<Float, Float>?,
+        notify: Boolean
+    ) {
+        gestureDetector.concatTransform(scaling, rotation, translation, pivot, notify)
+    }
+
+    override fun resetTransform(notify: Boolean): Boolean {
+        return gestureDetector.resetTransform(notify)
     }
 
     override fun onInterceptTouchEvent(event: MotionEvent): Boolean {

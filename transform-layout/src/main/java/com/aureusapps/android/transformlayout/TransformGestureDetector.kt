@@ -11,7 +11,7 @@ import androidx.dynamicanimation.animation.FloatValueHolder
 import kotlin.math.abs
 import kotlin.math.atan2
 
-class TransformGestureDetector(context: Context) {
+class TransformGestureDetector(context: Context) : Transformable {
 
     companion object {
         private const val MIN_FLING_VELOCITY = 50f
@@ -53,24 +53,14 @@ class TransformGestureDetector(context: Context) {
         gestureDetectorListener = listener
     }
 
-    /**
-     * Update scaling, rotation and translation values.
-     *
-     * @param scaling Scaling value around the given pivot point or the previous pivot point.
-     * @param rotation Rotation value around the given pivot point or the previous pivot point in degrees.
-     * @param translation Translation value to set.
-     * @param pivot Point to scale and rotate around.
-     * @param inform Whether to inform listeners about the update.
-     */
-    @Suppress("unused")
-    fun setTransform(
-        scaling: Float? = null,
-        rotation: Float? = null,
-        translation: Pair<Float, Float>? = null,
-        pivot: Pair<Float, Float>? = null,
-        inform: Boolean = true
-    ) {
-        if (rotation == null && scaling == null && translation == null) return
+    override fun setTransform(
+        scaling: Float?,
+        rotation: Float?,
+        translation: Pair<Float, Float>?,
+        pivot: Pair<Float, Float>?,
+        notify: Boolean
+    ): Boolean {
+        if (rotation == null && scaling == null && translation == null) return false
         cancelAnims()
         _drawMatrix.mutate { mutableMatrix ->
             if (pivot != null) {
@@ -87,60 +77,42 @@ class TransformGestureDetector(context: Context) {
                 mutableMatrix.setTranslate(translation.first, translation.second)
             }
         }
-        if (inform) {
+        if (notify) {
             informTransformUpdated()
         }
+        return true
     }
 
-    /**
-     * Copy the given transform matrix to the draw matrix.
-     *
-     * @param matrix Transform matrix to copy.
-     * @param inform Whether to inform listeners about the update.
-     */
-    @Suppress("unused")
-    fun setTransform(matrix: Matrix, inform: Boolean = true) {
-        if (_drawMatrix.matrix == matrix) return
+    override fun setTransform(matrix: Matrix, notify: Boolean): Boolean {
+        if (_drawMatrix.matrix == matrix) return false
         cancelAnims()
         _drawMatrix.mutate { mutableMatrix ->
             mutableMatrix.copy(matrix)
         }
-        if (inform) {
+        if (notify) {
             informTransformUpdated()
         }
+        return true
     }
 
-    /**
-     * Copy the given values to draw matrix.
-     *
-     * @param values Values to copy.
-     * @param inform Whether to inform listeners about the update.
-     */
-    fun setTransform(values: FloatArray, inform: Boolean = true) {
-        if (_drawMatrix.matrix.values().contentEquals(values)) return
+    override fun setTransform(values: FloatArray, notify: Boolean): Boolean {
+        if (_drawMatrix.matrix.values().contentEquals(values)) return false
         cancelAnims()
         _drawMatrix.mutate { mutableMatrix ->
             mutableMatrix.copyValues(values)
         }
-        if (inform) {
+        if (notify) {
             informTransformUpdated()
         }
+        return true
     }
 
-    /**
-     * Concat scaling, rotation and translation values to the current transform matrix.
-     *
-     * @param scaling Scaling value to concat around the given pivot point or the previous pivot point.
-     * @param rotation Rotation value to concat around the given pivot point or the previous pivot point in degrees.
-     * @param translation Translation value to concat.
-     * @param pivot Point to scale and rotate around. If not given, the previous pivot point will be used.
-     */
-    fun concatTransform(
-        scaling: Float? = null,
-        rotation: Float? = null,
-        translation: Pair<Float, Float>? = null,
-        pivot: Pair<Float, Float>? = null,
-        inform: Boolean = true
+    override fun concatTransform(
+        scaling: Float?,
+        rotation: Float?,
+        translation: Pair<Float, Float>?,
+        pivot: Pair<Float, Float>?,
+        notify: Boolean
     ) {
         if (rotation == null && scaling == null && translation == null) return
         cancelAnims()
@@ -159,57 +131,41 @@ class TransformGestureDetector(context: Context) {
                 mutableMatrix.postTranslate(translation.first, translation.second)
             }
         }
-        if (inform) {
+        if (notify) {
             informTransformUpdated()
         }
     }
 
-    /**
-     * Concatenate the given transform matrix to the current draw matrix.
-     *
-     * @param matrix Transform matrix to concatenate.
-     * @param inform Whether to inform listeners about the update.
-     */
-    fun concatTransform(matrix: Matrix, inform: Boolean = true) {
+    override fun concatTransform(matrix: Matrix, notify: Boolean) {
         cancelAnims()
         _drawMatrix.mutate { mutableMatrix ->
             mutableMatrix.postConcat(matrix)
         }
-        if (inform) {
+        if (notify) {
             informTransformUpdated()
         }
     }
 
-    /**
-     * Concatenate the given values to the current transform matrix.
-     *
-     * @param values Values to concatenate.
-     * @param inform Whether to inform listeners about the update.
-     */
-    fun concatTransform(values: FloatArray, inform: Boolean = true) {
+    override fun concatTransform(values: FloatArray, notify: Boolean) {
         cancelAnims()
         _drawMatrix.mutate { mutableMatrix ->
             mutableMatrix.postConcat(values)
         }
-        if (inform) {
+        if (notify) {
             informTransformUpdated()
         }
     }
 
-    /**
-     * Reset transformation matrix to an identity matrix.
-     *
-     * @param inform Whether to inform listeners about the update.
-     */
-    fun resetTransform(inform: Boolean = true) {
-        if (_drawMatrix.matrix.isIdentity) return
+    override fun resetTransform(notify: Boolean): Boolean {
+        if (_drawMatrix.isIdentity) return false
         cancelAnims()
         _drawMatrix.mutate { mutableMatrix ->
             mutableMatrix.reset()
         }
-        if (inform) {
+        if (notify) {
             informTransformUpdated()
         }
+        return true
     }
 
     /**
