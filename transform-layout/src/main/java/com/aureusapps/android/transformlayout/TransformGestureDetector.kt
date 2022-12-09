@@ -471,6 +471,7 @@ class TransformGestureDetector(context: Context) : Transformable {
         val inverse: Matrix
             get() {
                 if (matrixChanged) {
+                    matrixChanged = false
                     matrix.invert(invertedMatrix)
                 }
                 return invertedMatrix
