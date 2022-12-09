@@ -11,7 +11,7 @@ import androidx.dynamicanimation.animation.FloatValueHolder
 import kotlin.math.abs
 import kotlin.math.atan2
 
-class TransformGestureDetector(context: Context) : Transformable {
+class TransformGestureDetector : Transformable {
 
     companion object {
         private const val MIN_FLING_VELOCITY = 50f
@@ -45,7 +45,11 @@ class TransformGestureDetector(context: Context) : Transformable {
     private var flagTransformStarted = false
     private var gestureDetectorListener: TransformGestureDetectorListener? = null
 
-    init {
+    constructor(touchSlop: Int = ViewConfiguration.getTouchSlop()) {
+        touchSlopSquare = touchSlop * touchSlop
+    }
+
+    constructor(context: Context) {
         val configuration = ViewConfiguration.get(context)
         val touchSlop = configuration.scaledTouchSlop
         touchSlopSquare = touchSlop * touchSlop
