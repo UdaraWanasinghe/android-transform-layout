@@ -30,5 +30,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "transform-layout"
+rootProject.name = "android-transform-layout"
 include("transform-layout", "example")
