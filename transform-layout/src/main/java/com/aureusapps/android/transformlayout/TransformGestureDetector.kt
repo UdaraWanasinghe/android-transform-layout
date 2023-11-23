@@ -177,6 +177,7 @@ class TransformGestureDetector : Transformable {
     /**
      * Call this on touch event to handle gesture detection.
      */
+    @Suppress("SameReturnValue")
     fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
@@ -192,6 +193,7 @@ class TransformGestureDetector : Transformable {
                 event.savePointers()
                 flagTransformStarted = false
             }
+
             MotionEvent.ACTION_POINTER_DOWN -> {
                 val (focusX, focusY) = event.focusPoint()
                 previousFocusX = focusX
@@ -200,6 +202,7 @@ class TransformGestureDetector : Transformable {
                 detectSingleTap = false
                 event.savePointers()
             }
+
             MotionEvent.ACTION_MOVE -> {
                 val (focusX, focusY) = event.focusPoint()
                 // update single tap flag
@@ -226,7 +229,12 @@ class TransformGestureDetector : Transformable {
                     // if transform start not signaled, signal it
                     if (!flagTransformStarted) {
                         flagTransformStarted = true
-                        gestureDetectorListener?.onTransformStart(previousFocusX, previousFocusY, _transformMatrix.matrix)
+                        gestureDetectorListener?.onTransformStart(
+                            previousFocusX,
+                            previousFocusY,
+                            _transformMatrix.matrix,
+                            this
+                        )
                     }
                     _transformMatrix.mutate { mutableMatrix ->
                         if (isScaleEnabled) {
@@ -253,6 +261,7 @@ class TransformGestureDetector : Transformable {
                     informTransformUpdated()
                 }
             }
+
             MotionEvent.ACTION_POINTER_UP -> {
                 val (focusX, focusY) = event.focusPoint()
                 previousFocusX = focusX
@@ -280,12 +289,13 @@ class TransformGestureDetector : Transformable {
                     }
                 }
             }
+
             MotionEvent.ACTION_UP -> {
                 velocityTracker.addMovement(event)
                 if (detectSingleTap) {
                     val dt = event.eventTime - event.downTime
                     if (dt < ViewConfiguration.getTapTimeout()) {
-                        gestureDetectorListener?.onSingleTap(event.x, event.y)
+                        gestureDetectorListener?.onSingleTap(event.x, event.y, this)
                         return true
                     }
                 }
@@ -314,7 +324,12 @@ class TransformGestureDetector : Transformable {
                             }
                             addEndListener { _, _, _, _ ->
                                 if (flagInformComplete) {
-                                    gestureDetectorListener?.onTransformComplete(previousFocusX, previousFocusY, _transformMatrix.matrix)
+                                    gestureDetectorListener?.onTransformComplete(
+                                        previousFocusX,
+                                        previousFocusY,
+                                        _transformMatrix.matrix,
+                                        this@TransformGestureDetector
+                                    )
                                 } else {
                                     flagInformComplete = true
                                 }
@@ -336,7 +351,12 @@ class TransformGestureDetector : Transformable {
                             }
                             addEndListener { _, _, _, _ ->
                                 if (flagInformComplete) {
-                                    gestureDetectorListener?.onTransformComplete(previousFocusX, previousFocusY, _transformMatrix.matrix)
+                                    gestureDetectorListener?.onTransformComplete(
+                                        previousFocusX,
+                                        previousFocusY,
+                                        _transformMatrix.matrix,
+                                        this@TransformGestureDetector
+                                    )
                                 } else {
                                     flagInformComplete = true
                                 }
@@ -346,13 +366,23 @@ class TransformGestureDetector : Transformable {
                     } else {
                         // fling is enabled, but not enough velocity to start animation
                         if (flagTransformStarted) {
-                            gestureDetectorListener?.onTransformComplete(previousFocusX, previousFocusY, _transformMatrix.matrix)
+                            gestureDetectorListener?.onTransformComplete(
+                                previousFocusX,
+                                previousFocusY,
+                                _transformMatrix.matrix,
+                                this
+                            )
                         }
                     }
                 } else {
                     // fling is not enabled
                     if (flagTransformStarted) {
-                        gestureDetectorListener?.onTransformComplete(previousFocusX, previousFocusY, _transformMatrix.matrix)
+                        gestureDetectorListener?.onTransformComplete(
+                            previousFocusX,
+                            previousFocusY,
+                            _transformMatrix.matrix,
+                            this
+                        )
                     }
                 }
             }
@@ -361,7 +391,13 @@ class TransformGestureDetector : Transformable {
     }
 
     private fun informTransformUpdated() {
-        gestureDetectorListener?.onTransformUpdate(previousFocusX, previousFocusY, _transformMatrix.lastMatrix, _transformMatrix.matrix)
+        gestureDetectorListener?.onTransformUpdate(
+            previousFocusX,
+            previousFocusY,
+            _transformMatrix.lastMatrix,
+            _transformMatrix.matrix,
+            this
+        )
     }
 
     private fun MotionEvent.focusPoint(): Pair<Float, Float> {

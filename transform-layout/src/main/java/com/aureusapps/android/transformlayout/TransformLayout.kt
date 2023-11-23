@@ -52,24 +52,56 @@ open class TransformLayout @JvmOverloads constructor(
 
     private val gestureDetectorListeners = mutableSetOf<TransformGestureDetectorListener>()
     private val gestureDetectorListener = object : TransformGestureDetectorListener {
-        override fun onTransformStart(px: Float, py: Float, matrix: Matrix) {
+
+        override fun onTransformStart(
+            px: Float,
+            py: Float,
+            matrix: Matrix,
+            gestureDetector: TransformGestureDetector
+        ) {
+            super.onTransformStart(px, py, matrix, gestureDetector)
             invalidate()
-            gestureDetectorListeners.forEach { it.onTransformStart(px, py, matrix) }
+            gestureDetectorListeners.forEach {
+                it.onTransformStart(
+                    px,
+                    py,
+                    matrix,
+                    gestureDetector
+                )
+            }
         }
 
-        override fun onTransformUpdate(px: Float, py: Float, oldMatrix: Matrix, newMatrix: Matrix) {
+        override fun onTransformUpdate(
+            px: Float,
+            py: Float,
+            oldMatrix: Matrix,
+            newMatrix: Matrix,
+            gestureDetector: TransformGestureDetector
+        ) {
+            super.onTransformUpdate(px, py, oldMatrix, newMatrix, gestureDetector)
             invalidate()
-            gestureDetectorListeners.forEach { it.onTransformUpdate(px, py, oldMatrix, newMatrix) }
+            gestureDetectorListeners.forEach {
+                it.onTransformUpdate(px, py, oldMatrix, newMatrix, gestureDetector)
+            }
         }
 
-        override fun onTransformComplete(px: Float, py: Float, matrix: Matrix) {
+        override fun onTransformComplete(
+            px: Float,
+            py: Float,
+            matrix: Matrix,
+            gestureDetector: TransformGestureDetector
+        ) {
+            super.onTransformComplete(px, py, matrix, gestureDetector)
             invalidate()
-            gestureDetectorListeners.forEach { it.onTransformComplete(px, py, matrix) }
+            gestureDetectorListeners.forEach {
+                it.onTransformComplete(px, py, matrix, gestureDetector)
+            }
         }
 
-        override fun onSingleTap(px: Float, py: Float) {
+        override fun onSingleTap(px: Float, py: Float, gestureDetector: TransformGestureDetector) {
+            super.onSingleTap(px, py, gestureDetector)
             invalidate()
-            gestureDetectorListeners.forEach { it.onSingleTap(px, py) }
+            gestureDetectorListeners.forEach { it.onSingleTap(px, py, gestureDetector) }
         }
     }
     private val gestureDetector = TransformGestureDetector(context).apply {
@@ -81,7 +113,12 @@ open class TransformLayout @JvmOverloads constructor(
     override val inverseTransformMatrix: Matrix get() = gestureDetector.inverseTransformMatrix
 
     init {
-        obtainStyledAttributes(attrs, R.styleable.TransformLayout, defStyleAttr, defStyleRes).apply {
+        obtainStyledAttributes(
+            attrs,
+            R.styleable.TransformLayout,
+            defStyleAttr,
+            defStyleRes
+        ).apply {
             isScaleEnabled = getBoolean(R.styleable.TransformLayout_scaleEnabled, true)
             isRotateEnabled = getBoolean(R.styleable.TransformLayout_rotateEnabled, true)
             isTranslateEnabled = getBoolean(R.styleable.TransformLayout_translateEnabled, true)
