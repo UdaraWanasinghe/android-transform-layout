@@ -45,7 +45,11 @@ class TransformGestureDetector : Transformable {
     private var flagTransformStarted = false
     private var gestureDetectorListener: TransformGestureDetectorListener? = null
 
-    constructor(touchSlop: Int = ViewConfiguration.getTouchSlop()) {
+    /**
+     * Call [TransformLayoutConfiguration.setTouchSlop] to update the touch slop value before
+     * creating an instance of [TransformGestureDetector].
+     */
+    constructor(touchSlop: Int = TransformLayoutConfiguration.getTouchSlop()) {
         touchSlopSquare = touchSlop * touchSlop
     }
 
@@ -294,8 +298,14 @@ class TransformGestureDetector : Transformable {
                 velocityTracker.addMovement(event)
                 if (detectSingleTap) {
                     val dt = event.eventTime - event.downTime
-                    if (dt < ViewConfiguration.getTapTimeout()) {
-                        gestureDetectorListener?.onSingleTap(event.x, event.y, this)
+                    val handled = if (dt < ViewConfiguration.getTapTimeout()) {
+                        gestureDetectorListener?.onSingleTap(event.x, event.y, this) ?: false
+                    } else if (dt > ViewConfiguration.getLongPressTimeout()) {
+                        gestureDetectorListener?.onLongPress(event.x, event.y, this) ?: false
+                    } else {
+                        false
+                    }
+                    if (handled) {
                         return true
                     }
                 }

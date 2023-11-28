@@ -75,14 +75,33 @@ interface TransformGestureDetectorListener {
      *
      * @param px The x coordinate of the tap point.
      * @param py The y coordinate of the tap point.
+     *
+     * @return true if single tap handled, otherwise false.
      */
-    fun onSingleTap(px: Float, py: Float) {
-
+    fun onSingleTap(px: Float, py: Float): Boolean {
+        return false
     }
 
     @CallSuper
-    fun onSingleTap(px: Float, py: Float, gestureDetector: TransformGestureDetector) {
-        onSingleTap(px, py)
+    fun onSingleTap(px: Float, py: Float, gestureDetector: TransformGestureDetector): Boolean {
+        return onSingleTap(px, py)
+    }
+
+    /**
+     * Called when long press has been detected
+     *
+     * @param px The x coordinate of the long press point.
+     * @param py The y coordinate of the long press point.
+     *
+     * @return true if long press handled, otherwise false.
+     */
+    fun onLongPress(px: Float, py: Float): Boolean {
+        return false
+    }
+
+    @CallSuper
+    fun onLongPress(px: Float, py: Float, gestureDetector: TransformGestureDetector): Boolean {
+        return onLongPress(px, py)
     }
 
 }

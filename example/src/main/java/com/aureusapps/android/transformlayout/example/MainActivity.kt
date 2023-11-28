@@ -35,7 +35,8 @@ class MainActivity : AppCompatActivity() {
         drawButton = findViewById(R.id.draw_button)
         logTextView = findViewById(R.id.log_text_view)
 
-        transformLayout.addTransformGestureDetectorListener(object : TransformGestureDetectorListener {
+        transformLayout.addTransformGestureDetectorListener(object :
+            TransformGestureDetectorListener {
             private val f = "%.2f"
             private val b = StringBuilder()
             private val m = Matrix()
@@ -45,7 +46,12 @@ class MainActivity : AppCompatActivity() {
                 appendToLogText("Transform started", matrix, px, py)
             }
 
-            override fun onTransformUpdate(px: Float, py: Float, oldMatrix: Matrix, newMatrix: Matrix) {
+            override fun onTransformUpdate(
+                px: Float,
+                py: Float,
+                oldMatrix: Matrix,
+                newMatrix: Matrix
+            ) {
                 if (System.currentTimeMillis() - t > 200) {
                     t = System.currentTimeMillis()
                     appendToLogText("Transform updated", newMatrix, px, py)
@@ -56,9 +62,16 @@ class MainActivity : AppCompatActivity() {
                 appendToLogText("Transform completed", matrix, px, py)
             }
 
-            override fun onSingleTap(px: Float, py: Float) {
+            override fun onSingleTap(px: Float, py: Float): Boolean {
                 b.insert(0, "Single tap detected[px:$px, py:$py]\n")
                 logTextView.text = b.toString()
+                return true
+            }
+
+            override fun onLongPress(px: Float, py: Float): Boolean {
+                b.insert(0, "Long press detected[px:$px, py:$py]")
+                logTextView.text = b.toString()
+                return true
             }
 
             private fun appendToLogText(text: String, matrix: Matrix, px: Float, py: Float) {
