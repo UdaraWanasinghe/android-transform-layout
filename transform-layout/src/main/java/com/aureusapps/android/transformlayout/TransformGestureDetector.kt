@@ -24,6 +24,7 @@ class TransformGestureDetector : Transformable {
     override var isFlingEnabled = true
 
     private val _transformMatrix = TransformMatrix()
+    private val touchDownTransform = Matrix()
     override val transformMatrix: Matrix
         get() = _transformMatrix.matrix
     override val inverseTransformMatrix: Matrix
@@ -186,6 +187,7 @@ class TransformGestureDetector : Transformable {
     fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
+                touchDownTransform.set(_transformMatrix.matrix)
                 cancelAnims()
                 velocityTracker.clear()
                 velocityTracker.addMovement(event)
@@ -213,14 +215,15 @@ class TransformGestureDetector : Transformable {
             MotionEvent.ACTION_MOVE -> {
                 val (focusX, focusY) = event.focusPoint()
                 // update single tap flag
-                if (detectSingleTap) {
+                if (detectLongPress) {
                     val dx = focusX - downFocusX
                     val dy = focusY - downFocusY
                     val ds = dx * dx + dy * dy
                     if (ds > touchSlopSquare) {
                         detectSingleTap = false
                         detectLongPress = false
-                    } else {
+                    }
+                    if (detectSingleTap) {
                         val dt = event.eventTime - event.downTime
                         if (dt > ViewConfiguration.getTapTimeout()) {
                             detectSingleTap = false
@@ -240,7 +243,7 @@ class TransformGestureDetector : Transformable {
                         gestureDetectorListener?.onTransformStart(
                             previousFocusX,
                             previousFocusY,
-                            _transformMatrix.matrix,
+                            touchDownTransform,
                             this
                         )
                     }
@@ -304,6 +307,9 @@ class TransformGestureDetector : Transformable {
                 if (detectSingleTap) {
                     val dt = event.eventTime - event.downTime
                     if (dt < ViewConfiguration.getTapTimeout()) {
+                        if (flagTransformStarted) {
+                            setTransformToTouchDownState()
+                        }
                         val handled =
                             gestureDetectorListener?.onSingleTap(event.x, event.y, this) ?: false
                         if (handled) {
@@ -314,6 +320,9 @@ class TransformGestureDetector : Transformable {
                 if (detectLongPress) {
                     val dt = event.eventTime - event.downTime
                     if (dt > ViewConfiguration.getLongPressTimeout()) {
+                        if (flagTransformStarted) {
+                            setTransformToTouchDownState()
+                        }
                         val handled =
                             gestureDetectorListener?.onLongPress(event.x, event.y, this) ?: false
                         if (handled) {
@@ -420,6 +429,13 @@ class TransformGestureDetector : Transformable {
             _transformMatrix.matrix,
             this
         )
+    }
+
+    private fun setTransformToTouchDownState() {
+        _transformMatrix.mutate { mutableMatrix ->
+            mutableMatrix.set(touchDownTransform)
+        }
+        informTransformUpdated()
     }
 
     private fun MotionEvent.focusPoint(): Pair<Float, Float> {
@@ -560,6 +576,11 @@ class TransformGestureDetector : Transformable {
 
             fun copyValues(values: FloatArray) {
                 matrix.setValues(values)
+                matrixChanged = true
+            }
+
+            fun set(m: Matrix) {
+                matrix.set(m)
                 matrixChanged = true
             }
 

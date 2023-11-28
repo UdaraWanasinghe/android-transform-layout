@@ -4,8 +4,8 @@ import android.graphics.Matrix
 import android.os.Bundle
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import com.aureusapps.android.extensions.getRotation
-import com.aureusapps.android.extensions.getScaling
+import com.aureusapps.android.extensions.rotation
+import com.aureusapps.android.extensions.scaling
 import com.aureusapps.android.extensions.translation
 import com.aureusapps.android.transformlayout.TransformGestureDetectorListener
 import com.aureusapps.android.transformlayout.TransformLayout
@@ -40,9 +40,9 @@ class MainActivity : AppCompatActivity() {
             private val f = "%.2f"
             private val b = StringBuilder()
             private val m = Matrix()
-            private var t = System.currentTimeMillis()
 
             override fun onTransformStart(px: Float, py: Float, matrix: Matrix) {
+                b.insert(0, "\n")
                 appendToLogText("Transform started", matrix, px, py)
             }
 
@@ -52,10 +52,7 @@ class MainActivity : AppCompatActivity() {
                 oldMatrix: Matrix,
                 newMatrix: Matrix
             ) {
-                if (System.currentTimeMillis() - t > 200) {
-                    t = System.currentTimeMillis()
-                    appendToLogText("Transform updated", newMatrix, px, py)
-                }
+                appendToLogText("Transform updated", newMatrix, px, py)
             }
 
             override fun onTransformComplete(px: Float, py: Float, matrix: Matrix) {
@@ -76,15 +73,17 @@ class MainActivity : AppCompatActivity() {
 
             private fun appendToLogText(text: String, matrix: Matrix, px: Float, py: Float) {
                 m.set(matrix)
-                val (sx, sy) = m.getScaling(px, py)
-                val r = m.getRotation(px, py)
+                val (sx, sy) = m.scaling
+                val r = m.rotation
                 val (tx, ty) = m.translation
                 val t = "$text[" +
                         "tx:${f.format(tx)}, " +
                         "ty:${f.format(ty)}, " +
                         "sx:${f.format(sx)}, " +
                         "sy:${f.format(sy)}, " +
-                        "r:$${f.format(r)}]\n"
+                        "r:$${f.format(r)}, " +
+                        "px: $px, " +
+                        "py: $py]\n"
                 b.insert(0, t)
                 logTextView.text = b.toString()
             }
