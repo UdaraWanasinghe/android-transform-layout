@@ -98,11 +98,26 @@ open class TransformLayout @JvmOverloads constructor(
             }
         }
 
-        override fun onSingleTap(px: Float, py: Float, gestureDetector: TransformGestureDetector) {
+        override fun onSingleTap(
+            px: Float,
+            py: Float,
+            gestureDetector: TransformGestureDetector
+        ): Boolean {
             super.onSingleTap(px, py, gestureDetector)
             invalidate()
-            gestureDetectorListeners.forEach { it.onSingleTap(px, py, gestureDetector) }
+            return gestureDetectorListeners.any { it.onSingleTap(px, py, gestureDetector) }
         }
+
+        override fun onLongPress(
+            px: Float,
+            py: Float,
+            gestureDetector: TransformGestureDetector
+        ): Boolean {
+            super.onLongPress(px, py, gestureDetector)
+            invalidate()
+            return gestureDetectorListeners.any { it.onLongPress(px, py, gestureDetector) }
+        }
+
     }
     private val gestureDetector = TransformGestureDetector(context).apply {
         setGestureDetectorListener(gestureDetectorListener)
