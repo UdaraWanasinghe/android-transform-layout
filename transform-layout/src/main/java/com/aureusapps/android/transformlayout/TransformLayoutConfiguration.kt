@@ -4,6 +4,7 @@ import android.view.ViewConfiguration
 
 object TransformLayoutConfiguration {
 
+    @Suppress("DEPRECATION")
     private var touchSlop = ViewConfiguration.getTouchSlop()
 
     fun setTouchSlop(touchSlop: Int) {
