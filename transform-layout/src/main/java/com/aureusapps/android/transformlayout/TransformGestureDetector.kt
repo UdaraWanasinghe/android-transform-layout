@@ -39,6 +39,7 @@ class TransformGestureDetector : Transformable {
     private var previousTouchSpan = 1f
     private val pointerMap = HashMap<Int, Pair<Float, Float>>() // touch event pointers
     private var detectSingleTap = true
+    private var detectLongPress = true
     private val velocityTracker = VelocityTracker.obtain()
     private var flingAnimX: FlingAnimation? = null
     private var flingAnimY: FlingAnimation? = null
@@ -194,6 +195,7 @@ class TransformGestureDetector : Transformable {
                 previousFocusX = focusX
                 previousFocusY = focusY
                 detectSingleTap = true
+                detectLongPress = true
                 event.savePointers()
                 flagTransformStarted = false
             }
@@ -204,6 +206,7 @@ class TransformGestureDetector : Transformable {
                 previousFocusY = focusY
                 previousTouchSpan = event.touchSpan(focusX, focusY)
                 detectSingleTap = false
+                detectLongPress = false
                 event.savePointers()
             }
 
@@ -216,6 +219,7 @@ class TransformGestureDetector : Transformable {
                     val ds = dx * dx + dy * dy
                     if (ds > touchSlopSquare) {
                         detectSingleTap = false
+                        detectLongPress = false
                     } else {
                         val dt = event.eventTime - event.downTime
                         if (dt > ViewConfiguration.getTapTimeout()) {
@@ -272,6 +276,7 @@ class TransformGestureDetector : Transformable {
                 previousFocusY = focusY
                 previousTouchSpan = event.touchSpan(focusX, focusY)
                 detectSingleTap = false
+                detectLongPress = false
                 // Check the dot product of current velocities.
                 // If the pointer that left was opposing another velocity vector, clear.
                 if (isFlingEnabled) {
@@ -298,15 +303,22 @@ class TransformGestureDetector : Transformable {
                 velocityTracker.addMovement(event)
                 if (detectSingleTap) {
                     val dt = event.eventTime - event.downTime
-                    val handled = if (dt < ViewConfiguration.getTapTimeout()) {
-                        gestureDetectorListener?.onSingleTap(event.x, event.y, this) ?: false
-                    } else if (dt > ViewConfiguration.getLongPressTimeout()) {
-                        gestureDetectorListener?.onLongPress(event.x, event.y, this) ?: false
-                    } else {
-                        false
+                    if (dt < ViewConfiguration.getTapTimeout()) {
+                        val handled =
+                            gestureDetectorListener?.onSingleTap(event.x, event.y, this) ?: false
+                        if (handled) {
+                            return true
+                        }
                     }
-                    if (handled) {
-                        return true
+                }
+                if (detectLongPress) {
+                    val dt = event.eventTime - event.downTime
+                    if (dt > ViewConfiguration.getLongPressTimeout()) {
+                        val handled =
+                            gestureDetectorListener?.onLongPress(event.x, event.y, this) ?: false
+                        if (handled) {
+                            return true
+                        }
                     }
                 }
                 // do fling animation

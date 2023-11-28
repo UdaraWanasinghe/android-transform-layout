@@ -69,7 +69,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onLongPress(px: Float, py: Float): Boolean {
-                b.insert(0, "Long press detected[px:$px, py:$py]")
+                b.insert(0, "Long press detected[px:$px, py:$py]\n")
                 logTextView.text = b.toString()
                 return true
             }
