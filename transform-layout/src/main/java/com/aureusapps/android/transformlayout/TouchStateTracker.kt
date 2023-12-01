@@ -12,6 +12,10 @@ class TouchStateTracker(
         private set
     var isLongPressed = false
         private set
+    var touchX = 0f
+        private set
+    var touchY = 0f
+        private set
 
     private var detectSingleTap = true
     private var detectLongPress = true
@@ -27,11 +31,15 @@ class TouchStateTracker(
                 val (focusX, focusY) = event.focusPoint()
                 downFocusX = focusX
                 downFocusY = focusY
+                touchX = focusX
+                touchY = focusY
             }
 
             MotionEvent.ACTION_MOVE -> {
+                val (focusX, focusY) = event.focusPoint()
+                touchX = focusX
+                touchY = focusY
                 if (detectLongPress) {
-                    val (focusX, focusY) = event.focusPoint()
                     val dx = focusX - downFocusX
                     val dy = focusY - downFocusY
                     val ds = dx * dx + dy * dy
@@ -50,6 +58,8 @@ class TouchStateTracker(
 
             MotionEvent.ACTION_UP -> {
                 val dt = event.eventTime - event.downTime
+                touchX = event.x
+                touchY = event.y
                 if (detectSingleTap) {
                     if (dt < ViewConfiguration.getTapTimeout()) {
                         isSingleTapped = true
