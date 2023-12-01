@@ -8,6 +8,7 @@ import android.view.ViewConfiguration
 import androidx.core.graphics.values
 import androidx.dynamicanimation.animation.FlingAnimation
 import androidx.dynamicanimation.animation.FloatValueHolder
+import com.aureusapps.android.transformlayout.extensions.focusPoint
 import kotlin.math.abs
 import kotlin.math.atan2
 
@@ -48,10 +49,10 @@ class TransformGestureDetector : Transformable {
     private var gestureDetectorListener: TransformGestureDetectorListener? = null
 
     /**
-     * Call [TransformLayoutConfiguration.setTouchSlop] to update the touch slop value before
+     * Call [ViewConfigurationCompatExtended.setTouchSlop] to update the touch slop value before
      * creating an instance of [TransformGestureDetector].
      */
-    constructor(touchSlop: Int = TransformLayoutConfiguration.getTouchSlop()) {
+    constructor(touchSlop: Int = ViewConfigurationCompatExtended.getTouchSlop()) {
         touchSlopSquare = touchSlop * touchSlop
     }
 
@@ -436,22 +437,6 @@ class TransformGestureDetector : Transformable {
             mutableMatrix.set(touchDownTransform)
         }
         informTransformUpdated()
-    }
-
-    private fun MotionEvent.focusPoint(): Pair<Float, Float> {
-        val upIndex = if (actionMasked == MotionEvent.ACTION_POINTER_UP) actionIndex else -1
-        var sumX = 0f
-        var sumY = 0f
-        var sumCount = 0
-        for (pointerIndex in 0 until pointerCount) {
-            if (pointerIndex == upIndex) continue
-            sumX += getX(pointerIndex)
-            sumY += getY(pointerIndex)
-            sumCount++
-        }
-        val focusX = sumX / sumCount
-        val focusY = sumY / sumCount
-        return focusX to focusY
     }
 
     private fun MotionEvent.touchSpan(

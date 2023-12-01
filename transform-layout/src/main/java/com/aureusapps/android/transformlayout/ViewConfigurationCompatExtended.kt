@@ -2,7 +2,7 @@ package com.aureusapps.android.transformlayout
 
 import android.view.ViewConfiguration
 
-object TransformLayoutConfiguration {
+object ViewConfigurationCompatExtended {
 
     @Suppress("DEPRECATION")
     private var touchSlop = ViewConfiguration.getTouchSlop()
