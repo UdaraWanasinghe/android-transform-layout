@@ -42,7 +42,7 @@ class TransformGestureDetector : Transformable {
     private val pointerMap = HashMap<Int, Pair<Float, Float>>() // touch event pointers
     private var detectSingleTap = true
     private var detectLongPress = true
-    private val velocityTracker = VelocityTracker.obtain()
+    private var velocityTracker: VelocityTracker? = VelocityTracker.obtain()
     private var flingAnimX: FlingAnimation? = null
     private var flingAnimY: FlingAnimation? = null
     private var flagTransformStarted = false
@@ -186,6 +186,7 @@ class TransformGestureDetector : Transformable {
      */
     @Suppress("SameReturnValue")
     fun onTouchEvent(event: MotionEvent): Boolean {
+        val velocityTracker = velocityTracker ?: return false
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 touchDownTransform.set(_transformMatrix.matrix)
@@ -232,7 +233,7 @@ class TransformGestureDetector : Transformable {
                     }
                 }
                 // update velocity tracker
-                velocityTracker?.addMovement(event)
+                velocityTracker.addMovement(event)
                 // update transform
                 val touchSpan = event.touchSpan(focusX, focusY)
                 // transform is only updated if single tap is not detected
@@ -523,11 +524,6 @@ class TransformGestureDetector : Transformable {
     private val Float.toDegrees: Float
         get() = this * 180f / Math.PI.toFloat()
 
-    protected fun finalize() {
-        // since velocity tracker is a natively allocated object, it should be explicitly released.
-        velocityTracker?.recycle()
-    }
-
     private class TransformMatrix {
         val matrix = Matrix()
         val lastMatrix = Matrix()
@@ -617,6 +613,11 @@ class TransformGestureDetector : Transformable {
 
         }
 
+    }
+
+    fun release() {
+        velocityTracker?.recycle()
+        velocityTracker = null
     }
 
 }
