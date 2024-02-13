@@ -24,36 +24,32 @@ open class TransformLayout @JvmOverloads constructor(
     @StyleRes defStyleRes: Int = R.style.TransformLayoutStyle
 ) : FrameLayout(context, attrs, defStyleAttr, defStyleRes), Transformable {
 
-    companion object {
-        private val IDENTITY_MATRIX = Matrix()
-    }
-
     override var isScaleEnabled: Boolean
-        get() = gestureDetector?.isScaleEnabled ?: false
+        get() = gestureDetector.isScaleEnabled
         set(value) {
-            gestureDetector?.isScaleEnabled = value
+            gestureDetector.isScaleEnabled = value
         }
 
     override var isRotateEnabled: Boolean
-        get() = gestureDetector?.isRotateEnabled ?: false
+        get() = gestureDetector.isRotateEnabled
         set(value) {
-            gestureDetector?.isRotateEnabled = value
+            gestureDetector.isRotateEnabled = value
         }
 
     override var isTranslateEnabled: Boolean
-        get() = gestureDetector?.isTranslateEnabled ?: false
+        get() = gestureDetector.isTranslateEnabled
         set(value) {
-            gestureDetector?.isTranslateEnabled = value
+            gestureDetector.isTranslateEnabled = value
         }
 
     override var isFlingEnabled: Boolean
-        get() = gestureDetector?.isFlingEnabled ?: false
+        get() = gestureDetector.isFlingEnabled
         set(value) {
-            gestureDetector?.isFlingEnabled = value
+            gestureDetector.isFlingEnabled = value
         }
 
     override val pivotPoint: Pair<Float, Float>
-        get() = gestureDetector?.pivotPoint ?: (0f to 0f)
+        get() = gestureDetector.pivotPoint
 
     var isTransformEnabled = false
 
@@ -124,11 +120,13 @@ open class TransformLayout @JvmOverloads constructor(
             return gestureDetectorListeners.any { it.onLongPress(px, py, gestureDetector) }
         }
     }
-    private var gestureDetector: TransformGestureDetector? = null
+    private val gestureDetector = TransformGestureDetector(context).apply {
+        setGestureDetectorListener(gestureDetectorListener)
+    }
 
-    override val transformMatrix: Matrix get() = gestureDetector?.transformMatrix ?: IDENTITY_MATRIX
+    override val transformMatrix: Matrix get() = gestureDetector.transformMatrix
 
-    override val inverseTransformMatrix: Matrix get() = gestureDetector?.inverseTransformMatrix ?: IDENTITY_MATRIX
+    override val inverseTransformMatrix: Matrix get() = gestureDetector.inverseTransformMatrix
 
     init {
         obtainStyledAttributes(
@@ -147,11 +145,11 @@ open class TransformLayout @JvmOverloads constructor(
     }
 
     override fun setTransform(matrix: Matrix, notify: Boolean): Boolean {
-        return gestureDetector?.setTransform(matrix, notify) ?: false
+        return gestureDetector.setTransform(matrix, notify)
     }
 
     override fun setTransform(values: FloatArray, notify: Boolean): Boolean {
-        return gestureDetector?.setTransform(values, notify) ?: false
+        return gestureDetector.setTransform(values, notify)
     }
 
     override fun setTransform(
@@ -161,15 +159,15 @@ open class TransformLayout @JvmOverloads constructor(
         pivot: Pair<Float, Float>?,
         notify: Boolean
     ): Boolean {
-        return gestureDetector?.setTransform(scaling, rotation, translation, pivot, notify) ?: false
+        return gestureDetector.setTransform(scaling, rotation, translation, pivot, notify)
     }
 
     override fun concatTransform(matrix: Matrix, notify: Boolean) {
-        gestureDetector?.concatTransform(matrix, notify)
+        gestureDetector.concatTransform(matrix, notify)
     }
 
     override fun concatTransform(values: FloatArray, notify: Boolean) {
-        gestureDetector?.concatTransform(values, notify)
+        gestureDetector.concatTransform(values, notify)
     }
 
     override fun concatTransform(
@@ -179,23 +177,15 @@ open class TransformLayout @JvmOverloads constructor(
         pivot: Pair<Float, Float>?,
         notify: Boolean
     ) {
-        gestureDetector?.concatTransform(scaling, rotation, translation, pivot, notify)
+        gestureDetector.concatTransform(scaling, rotation, translation, pivot, notify)
     }
 
     override fun resetTransform(notify: Boolean): Boolean {
-        return gestureDetector?.resetTransform(notify) ?: false
-    }
-
-    override fun onAttachedToWindow() {
-        super.onAttachedToWindow()
-        gestureDetector = TransformGestureDetector(context).apply {
-            setGestureDetectorListener(gestureDetectorListener)
-        }
+        return gestureDetector.resetTransform(notify)
     }
 
     override fun onDetachedFromWindow() {
-        gestureDetector?.release()
-        gestureDetector = null
+        gestureDetector.release()
         super.onDetachedFromWindow()
     }
 
@@ -212,7 +202,7 @@ open class TransformLayout @JvmOverloads constructor(
         // children didn't consume them.
         if (isTransformEnabled) {
             // Gesture detector will consume events only is transform is enabled.
-            return gestureDetector?.onTouchEvent(event) ?: false
+            return gestureDetector.onTouchEvent(event)
         }
         return false
     }
@@ -221,7 +211,7 @@ open class TransformLayout @JvmOverloads constructor(
         // Touch events are dispatched to the child views and the parent view from here.
         if (!isTransformEnabled) {
             // If transform is disabled, we have to transform the events dispatched to children.
-            ev.transform(gestureDetector?.inverseTransformMatrix)
+            ev.transform(gestureDetector.inverseTransformMatrix)
         }
         return super.dispatchTouchEvent(ev)
     }

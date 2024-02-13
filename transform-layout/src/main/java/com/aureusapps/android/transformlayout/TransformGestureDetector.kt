@@ -42,7 +42,7 @@ class TransformGestureDetector : Transformable {
     private val pointerMap = HashMap<Int, Pair<Float, Float>>() // touch event pointers
     private var detectSingleTap = true
     private var detectLongPress = true
-    private var velocityTracker: VelocityTracker? = VelocityTracker.obtain()
+    private var velocityTracker: VelocityTracker? = null
     private var flingAnimX: FlingAnimation? = null
     private var flingAnimY: FlingAnimation? = null
     private var flagTransformStarted = false
@@ -186,7 +186,7 @@ class TransformGestureDetector : Transformable {
      */
     @Suppress("SameReturnValue")
     fun onTouchEvent(event: MotionEvent): Boolean {
-        val velocityTracker = velocityTracker ?: return false
+        val velocityTracker = getVelocityTracker()
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 touchDownTransform.set(_transformMatrix.matrix)
@@ -421,6 +421,10 @@ class TransformGestureDetector : Transformable {
             }
         }
         return true
+    }
+
+    private fun getVelocityTracker(): VelocityTracker {
+        return velocityTracker ?: VelocityTracker.obtain().also { velocityTracker = it }
     }
 
     private fun informTransformUpdated() {
