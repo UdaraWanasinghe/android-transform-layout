@@ -1,6 +1,7 @@
 @file:Suppress("UnstableApiUsage")
 
 import com.aureusapps.gradle.PublishLibraryConstants.GROUP_ID
+import com.aureusapps.gradle.PublishLibraryConstants.VERSION_NAME
 
 plugins {
     id("com.android.library")
@@ -10,7 +11,8 @@ plugins {
 }
 
 class Props(project: Project) {
-    val groupId = project.findProperty(GROUP_ID).toString()
+    val groupId = project.findProperty(GROUP_ID) as String
+    val versionName = project.findProperty(VERSION_NAME) as String
 }
 
 val props = Props(project)
@@ -36,12 +38,11 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+        jvmTarget = "17"
     }
     publishing {
         singleVariant("release") {
             withSourcesJar()
-            withJavadocJar()
         }
     }
 }
@@ -49,7 +50,7 @@ android {
 publishLibrary {
     groupId.set(props.groupId)
     artifactId.set("transform-layout")
-    versionName.set("1.0.0")
+    versionName.set(props.versionName)
     libName.set("TransformLayout")
     libDescription.set("An Android layout that supports simultaneous handling of scaling, rotation, translation and fling gestures.")
     libUrl.set("https://github.com/UdaraWanasinghe/android-transform-layout")
@@ -63,13 +64,8 @@ publishLibrary {
 }
 
 dependencies {
-    implementation(libs.core.ktx)
-    implementation(libs.appcompat)
-    implementation(libs.material)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.android.material)
     implementation(libs.aureusapps.extensions)
-
-    testImplementation(libs.junit)
-
-    androidTestImplementation(libs.junit.ext)
-    androidTestImplementation(libs.espresso.core)
 }
