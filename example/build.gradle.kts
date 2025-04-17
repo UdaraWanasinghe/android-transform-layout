@@ -20,7 +20,7 @@ val props = Props(project)
 
 android {
     namespace = "${props.groupId}.transformlayout.example"
-    compileSdk = 34
+    compileSdk = 35
     defaultConfig {
         applicationId = "${props.groupId}.transformlayout.example"
         minSdk = 21

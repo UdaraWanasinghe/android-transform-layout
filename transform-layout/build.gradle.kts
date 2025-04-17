@@ -19,7 +19,7 @@ val props = Props(project)
 
 android {
     namespace = "${props.groupId}.transformlayout"
-    compileSdk = 34
+    compileSdk = 35
     defaultConfig {
         minSdk = 21
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
